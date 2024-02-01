@@ -185,8 +185,9 @@ impl Runner {
 
     /// 修改账户状态
     pub fn modify_account_state(&mut self, address: [u8; 20], account_state_ex: AccountStateEx) {
-        // 1. 查看该地址是否以及存在EVM 状态中
-        // 2. 如果地址不在状态中，则进行修改code_hash 与 account
+
+        // 1. Check if the address already exists in the EVM state
+        // 2. If the address is not in the state, proceed to modify the code hash and account
         let storage = if let Some(storage) = account_state_ex.storage.clone() {
             storage
         } else {
@@ -199,8 +200,6 @@ impl Runner {
             [0u8; 32]
         };
 
-
-
         let account_state = AccountState{
             nonce: account_state_ex.nonce.clone(),
             balance: account_state_ex.balance.clone(),
@@ -208,7 +207,7 @@ impl Runner {
             code_hash: code_hash,
         };
 
-        // 目前只使用简版实现
+        // Currently, only a simplified implementation is used, without considering whether the account state has already been initialized in the EVM.
         let _ = self.state.accounts.insert(address, account_state.clone());
 
         if !account_state.code_hash.clone().iter().all(|&x| x == 0) {

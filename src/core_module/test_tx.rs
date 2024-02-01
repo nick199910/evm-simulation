@@ -191,20 +191,18 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
     let OlympusDAO_tx = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf"; // 可行
     let Templedao_tx = "0x8c3f442fc6d640a6ff3ea0b12be64f1d4609ea94edd2966f42c01cd9bdcf04b5"; // 可行
 
-    // 拿到交易前置账户状态
+    // Obtain the pre-transaction account state
     let accounts_state_pre_tx = get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(uniswap_v2_attack), false).await;
 
-    // 对交易前置账户进行预处理
 
-    // 拿到交易的上下文
+    // Obtain the transaction context
     let transaction_content = get_transaction_content(provider, TxHash::from_str(uniswap_v2_attack).unwrap()).await.expect("get transaction hash error");
 
-    // 拿到虚拟机
     let state: EvmState;
     state = EvmState::new(None);
 
 
-    // 为虚拟机交易上下文
+    // Set the transaction context for the virtual machine
     let caller = transaction_content.from.0;
     let origin= transaction_content.from.0;
     let address = transaction_content.to.unwrap().0;
@@ -224,8 +222,6 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
         Runner::new(caller, Some(origin), Some(address), Some(value) , Some(data), Some(state));
 
 
-    // 为虚拟机设置状态上下文
-    // 枚举所有的状态
     accounts_state_pre_tx.iter().for_each(|(_addr, _account_state_ex)| {
         interpreter.modify_account_state(_addr.0, _account_state_ex.clone());
     });
@@ -234,7 +230,7 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
 
 
 
-    // // Check if bytecode is an hex value of a file path
+    // Check if bytecode is an hex value of a file path
     if bytecode.starts_with("0x") {
         let bytecode = hex::decode(&bytecode[2..]).expect("Invalid bytecode");
 
