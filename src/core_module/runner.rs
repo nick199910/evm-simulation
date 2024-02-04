@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::core_module::utils::bytes::{_hex_string_to_bytes, pad_left};
+use crate::core_module::utils::bytes::{_hex_string_to_bytes, get_op_code, pad_left};
 
 use super::memory::Memory;
 use super::op_codes;
@@ -10,9 +10,11 @@ use super::utils::environment::{increment_nonce, init_account};
 use super::utils::errors::ExecutionError;
 
 use ethers::types::U256;
+use super::other_test::read_op_tracer;
 
 // Colored output
 use colored::*;
+use crate::core_module::env::EvmContext;
 use crate::core_module::test_account::AccountStateEx;
 
 pub struct Runner {
@@ -34,6 +36,9 @@ pub struct Runner {
     pub calldata: Memory,
     pub returndata: Memory,
     pub stack: Stack,
+
+    // EVM env
+    pub evm_context: Option<EvmContext>
 }
 
 /// Implementation of the Runner struct, which is responsible for executing EVM bytecode.
@@ -59,6 +64,7 @@ impl Runner {
         callvalue: Option<[u8; 32]>,
         calldata: Option<Vec<u8>>,
         state: Option<EvmState>,
+        evm_context: Option<EvmContext>
     ) -> Self {
         let mut instance = Self {
             // Set the program counter to 0
@@ -103,6 +109,7 @@ impl Runner {
 
             // Set the call depth to 0
             call_depth: 0,
+            evm_context: evm_context,
         };
 
         // // ============================= 删除其所有的初始化工作
@@ -147,13 +154,10 @@ impl Runner {
             Some(EvmState::new(Some(String::from(
                 "https://eth.llamarpc.com",
             )))),
+            None
         );
-
         runner
     }
-
-
-
 
     /// Increments the program counter by the specified size.
     ///
@@ -246,9 +250,41 @@ impl Runner {
             return Err(ExecutionError::EmptyByteCode);
         }
 
+        let mut op_list = Vec::new();
+
         // Interpret the bytecode
+        let mut cnt = 0usize;
         while self.pc < self.bytecode.len() {
             // Interpret an opcode
+            op_list.push(get_op_code(self.bytecode[self.pc]));
+
+            let my_opcode = get_op_code(self.bytecode[self.pc]).to_string();
+
+            // if cnt.eq(&128) {
+            // // if !self.pc.eq(&(read_op_tracer().structLogs[cnt].pc as usize)) {
+            // // if !my_opcode.eq(&read_op_tracer().structLogs[cnt].op) {
+            //     println!(" ===================================================================== ");
+            //     println!("current op_code count is: {}", cnt);
+            //     println!("my evm op_code {}      geth:{} pc {}", my_opcode, read_op_tracer().structLogs[cnt].op, read_op_tracer().structLogs[cnt].pc);
+            //
+            //     self.debug_memory();
+            //     self.debug_stack();
+            //     // self.debug_storage();
+            //
+            //     println!("call deepth is {}", self.call_depth);
+            //
+            //     println!(
+            //         "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n ",
+            //         "ERROR:".red(),
+            //         "Runtime error".red(),
+            //         "PC".yellow(),
+            //         self.pc,
+            //         "OpCode".yellow(),
+            //         self.bytecode[self.pc],
+            //     );
+            //     break;
+            // }
+
             let result = self.interpret_op_code(self.bytecode[self.pc]);
 
             // Check if the interpretation was successful
@@ -257,7 +293,10 @@ impl Runner {
                 error = Some(result.unwrap_err());
                 break;
             }
+            cnt = cnt + 1;
+
         }
+        println!("op_list: {:?}", op_list);
 
         /* -------------------------------------------------------------------------- */
         /*                            Print execution error                           */
@@ -266,6 +305,7 @@ impl Runner {
         if error.is_some() {
             println!("address is {:?} {:?}", self.address, self.address.len());
             println!("call deepth is {}", self.call_depth);
+
             println!(
                 "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {} ",
                 "ERROR:".red(),
@@ -568,6 +608,78 @@ impl Runner {
         Ok(())
     }
 
+
+
+    fn debug_stack(&self) {
+        let border_line =
+            "\n╔═══════════════════════════════════════════════════════════════════════════════════════════════════════╗";
+        let footer_line =
+            "╚═══════════════════════════════════════════════════════════════════════════════════════════════════════╝\n";
+
+        println!("\n\n{}", border_line.clone().green());
+        println!(
+            "{} {:<101} {}",
+            "║".green(),
+            "Final stack".yellow(),
+            "║".green()
+        );
+        println!("{}", footer_line.clone().green());
+
+        let mut reversed_stack = self.stack.stack.clone();
+        reversed_stack.reverse();
+
+        // Print all the stack 32 bytes elements with a space between each bytes
+        for (_, element) in reversed_stack.iter().enumerate() {
+            let hex: String = utils::debug::to_hex_string(*element);
+            println!("{}", hex);
+        }
+    }
+
+    /// Print a debug message that display the final memory.
+    fn debug_memory(&self) {
+        let border_line =
+            "\n╔═══════════════════════════════════════════════════════════════════════════════════════════════════════╗";
+        let footer_line =
+            "╚═══════════════════════════════════════════════════════════════════════════════════════════════════════╝\n";
+
+        println!("\n{}", border_line.clone().blue());
+        println!(
+            "{} {:<101} {}",
+            "║".blue(),
+            "Final memory heap".yellow(),
+            "║".blue()
+        );
+        println!("{}", footer_line.clone().blue());
+
+        // Print the memory heap 32 bytes by 32 bytes with a space between each bytes
+        for chunk in self.memory.heap.chunks(32) {
+            let padded_chunk: Vec<u8>;
+
+            if chunk.len() < 32 {
+                // If the chunk size is less than 32, create a new vector with enough zeros to reach a total size of 32
+                padded_chunk = [chunk.to_vec(), vec![0u8; 32 - chunk.len()]].concat();
+            } else {
+                // If the chunk size is exactly 32, use it as is
+                padded_chunk = chunk.to_vec();
+            }
+
+            let hex: String =
+                utils::debug::to_hex_string(padded_chunk.as_slice().try_into().unwrap());
+            println!("{}", hex);
+        }
+
+        if self.memory.heap.is_empty() {
+            println!("🚧 {} 🚧", "Empty memory".red());
+        }
+
+        println!();
+    }
+
+    /// Print a debug message that display the final storage in depth.
+    fn debug_storage(&mut self) {
+        self.state.debug_state();
+    }
+
 }
 
 #[cfg(test)]
@@ -576,7 +688,7 @@ mod tests {
 
     #[test]
     fn test_push0() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None);
+        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
         let _ = runner.interpret(vec![0x5f, 0x5f, 0x5f], true);
 
         assert_eq!(runner.stack.pop().unwrap(), [0u8; 32]);
@@ -586,7 +698,7 @@ mod tests {
 
     #[test]
     fn test_push1() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None);
+        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
         let _ = runner.interpret(vec![0x60, 0x01, 0x60, 0x02, 0x60, 0x03], true);
 
         assert_eq!(

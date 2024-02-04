@@ -119,10 +119,12 @@ pub fn log3(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn log4(runner: &mut Runner) -> Result<(), ExecutionError> {
+
     // Check if static mode is enabled
     if runner.state.static_mode {
         return Err(ExecutionError::StaticCallStateChanged);
     }
+
     let offset = U256::from_big_endian(&runner.stack.pop()?);
     let size: U256 = U256::from_big_endian(&runner.stack.pop()?);
 

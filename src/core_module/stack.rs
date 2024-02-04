@@ -1,3 +1,7 @@
+use std::fmt;
+use colored::Colorize;
+use primitive_types::U256;
+use crate::core_module::utils;
 use super::utils::errors::ExecutionError;
 
 /// A stack data structure used in the Ethereum Virtual Machine (EVM) to store and manipulate data.
@@ -113,3 +117,4 @@ impl Clone for Stack {
         }
     }
 }
+

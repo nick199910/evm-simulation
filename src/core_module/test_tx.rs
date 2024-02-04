@@ -50,7 +50,6 @@ pub struct Transaction {
 
     pub transaction_type: Option<U64>,
 
-
     pub max_priority_fee_per_gas: Option<U256>,
     
     pub max_fee_per_gas: Option<U256>,
@@ -109,29 +108,6 @@ fn get_test_account_msg() -> AccountStateEx {
     }
 }
 
-
-
-
-
-#[tokio::test]
-async fn test_get_transaction_content() -> Result<(), ProviderError>{
-    let sepolia_rpc = "https://rough-frosty-field.ethereum-sepolia.quiknode.pro/40fa9bf59d6007a200145efb93862af9a528e8ae/";
-
-    let set_five_hash = "0xceb77591c14a3a8458741a0a1e205e56d319f970c6ef497a41917df464401561";
-    let set_six_hash = "0x55e59ddfb18232d0e23e5b9675900ea3e614490c5e801fa75a3cf572ebf70ca2";
-
-    let provider = Provider::try_connect(sepolia_rpc).await.expect("rpc connect error");
-
-    let transaction_content = get_transaction_content(provider, TxHash::from_str(set_six_hash).unwrap()).await.expect("get transaction hash error");
-
-    let account_msg = get_test_account_msg();
-
-
-    Ok(())
-
-    // let ret = provider.get_transaction(TxHash::from_str(set_five_hash).unwrap()).await?;
-}
-
 #[tokio::test]
 async fn test_no_state_run() -> Result<(), ProviderError> {
 
@@ -162,7 +138,7 @@ async fn test_no_state_run() -> Result<(), ProviderError> {
 
     // Create a new interpreter
     let mut interpreter =
-        Runner::new(caller, origin, address, value, data, Some(state));
+        Runner::new(caller, origin, address, value, data, Some(state), None);
 
     // interpreter.state.accounts.insert()
 
@@ -194,13 +170,11 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
     // Obtain the pre-transaction account state
     let accounts_state_pre_tx = get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(uniswap_v2_attack), false).await;
 
-
     // Obtain the transaction context
     let transaction_content = get_transaction_content(provider, TxHash::from_str(uniswap_v2_attack).unwrap()).await.expect("get transaction hash error");
 
     let state: EvmState;
     state = EvmState::new(None);
-
 
     // Set the transaction context for the virtual machine
     let caller = transaction_content.from.0;
@@ -219,16 +193,13 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
 
     // Create a new interpreter
     let mut interpreter =
-        Runner::new(caller, Some(origin), Some(address), Some(value) , Some(data), Some(state));
-
+        Runner::new(caller, Some(origin), Some(address), Some(value) , Some(data), Some(state), None);
 
     accounts_state_pre_tx.iter().for_each(|(_addr, _account_state_ex)| {
         interpreter.modify_account_state(_addr.0, _account_state_ex.clone());
     });
 
     let bytecode = accounts_state_pre_tx.get(&transaction_content.to.unwrap()).unwrap().code.as_ref().unwrap();
-
-
 
     // Check if bytecode is an hex value of a file path
     if bytecode.starts_with("0x") {
@@ -246,22 +217,6 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
     Ok(())
 }
 
-#[tokio::test]
-async fn test_state_run() -> Result<(), ProviderError> {
-    let provider_http_url = "https://lb.nodies.app/v1/181a5ebf4c954f8496ae7cbc1ac8d03b";
-    let provider = Provider::try_connect(provider_http_url).await.expect("rpc connect error");
-
-
-    let euler_attack = "0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d";
-    let uniswap_v2_attack = "0x45d108052e01c20f37fd05db462b9cef6629a70849bcd71b36291786ee6ee3e9";
-    let usdc_transfer_tx = "0x890249a15f17950a60711c0396ccd147068365ea852f0837c08f55f9dd7c320e";
-    let OlympusDAO_tx = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf";
-    let Templedao_tx = "0x8c3f442fc6d640a6ff3ea0b12be64f1d4609ea94edd2966f42c01cd9bdcf04b5";
-
-    get_accounts_state_pre_tx(Arc::new(provider), to_h256(uniswap_v2_attack), false).await;
-
-    Ok(())
-}
 
 async fn get_accounts_state_pre_tx(
     provider: Arc<Provider<Http>>,

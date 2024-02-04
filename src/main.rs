@@ -29,7 +29,7 @@ fn main() -> Result<(), ExecutionError> {
 
     // Create a new interpreter
     let mut interpreter =
-        core_module::runner::Runner::new(caller, origin, address, value, data, Some(state));
+        core_module::runner::Runner::new(caller, origin, address, value, data, Some(state), None);
 
     // Check if bytecode is an hex value of a file path
     if bytecode.starts_with("0x") {

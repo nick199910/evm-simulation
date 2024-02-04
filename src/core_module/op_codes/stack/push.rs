@@ -25,6 +25,7 @@ pub fn push(runner: &mut Runner, data_len: usize) -> Result<(), ExecutionError> 
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
@@ -33,6 +34,7 @@ mod tests {
         let _ = runner.interpret(vec![0x60, 0xff], true);
 
         assert_eq!(runner.stack.stack.len(), 1);
+
         assert_eq!(
             runner.stack.pop().unwrap(),
             [
