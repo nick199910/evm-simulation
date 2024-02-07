@@ -481,7 +481,7 @@ mod tests {
         assert_eq!(result, pad_left(&[0x01]));
 
         let stored_code = runner.state.get_code_at(bytes32_to_address(&result));
-        assert!(stored_code.is_ok());
+        assert!(stored_code.is_some());
         //
         let balance_result = get_balance(bytes32_to_address(&result), &mut runner);
         assert!(balance_result.is_err());

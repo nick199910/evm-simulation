@@ -37,6 +37,10 @@ pub struct Runner {
     pub returndata: Memory,
     pub stack: Stack,
 
+    // EVM op_count
+
+    pub op_count: u128,
+
     // EVM env
     pub evm_context: Option<EvmContext>
 }
@@ -110,6 +114,7 @@ impl Runner {
             // Set the call depth to 0
             call_depth: 0,
             evm_context: evm_context,
+            op_count: 0,
         };
 
         // // ============================= 删除其所有的初始化工作
@@ -237,7 +242,6 @@ impl Runner {
             }
         }
 
-
         /* -------------------------------------------------------------------------- */
         /*                             Interpret bytecode                             */
         /* -------------------------------------------------------------------------- */
@@ -253,35 +257,41 @@ impl Runner {
         let mut op_list = Vec::new();
 
         // Interpret the bytecode
-        let mut cnt = 0usize;
         while self.pc < self.bytecode.len() {
+            let mut op_count = self.op_count;
+            let mut add_one_flag = false;
+            let mut add_two_flag = false;
+
+            if self.call_depth == 1 && !add_one_flag {
+                op_count += 1;
+                add_one_flag = true;
+            }
+
+            if self.call_depth == 2 && !add_two_flag {
+                op_count += 2;
+                add_two_flag = true;
+            }
+
             // Interpret an opcode
             op_list.push(get_op_code(self.bytecode[self.pc]));
 
             let my_opcode = get_op_code(self.bytecode[self.pc]).to_string();
 
-            // if cnt.eq(&128) {
-            // // if !self.pc.eq(&(read_op_tracer().structLogs[cnt].pc as usize)) {
-            // // if !my_opcode.eq(&read_op_tracer().structLogs[cnt].op) {
+            // if op_count.eq(&4774)
+            //     // && self.call_depth == 2
+            // {
+            // if !self.pc.eq(&(read_op_tracer().structLogs[cnt].pc as usize)) {
+            // if self.call_depth == read_op_tracer().structLogs[self.op_count as usize].depth && !my_opcode.eq(&read_op_tracer().structLogs[self.op_count as usize].op) {
+            // if self.call_depth.eq(&1) && self.pc.eq(&19197) {
             //     println!(" ===================================================================== ");
-            //     println!("current op_code count is: {}", cnt);
-            //     println!("my evm op_code {}      geth:{} pc {}", my_opcode, read_op_tracer().structLogs[cnt].op, read_op_tracer().structLogs[cnt].pc);
+            //     println!("op_list: {:?}", op_list);
+            //     println!("current op_code count is: {}", op_count);
+            //     println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", my_opcode, read_op_tracer().structLogs[op_count as usize].op, self.pc, read_op_tracer().structLogs[op_count as usize].pc);
+            //     println!("call deepth is {}", self.call_depth);
             //
             //     self.debug_memory();
             //     self.debug_stack();
             //     // self.debug_storage();
-            //
-            //     println!("call deepth is {}", self.call_depth);
-            //
-            //     println!(
-            //         "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n ",
-            //         "ERROR:".red(),
-            //         "Runtime error".red(),
-            //         "PC".yellow(),
-            //         self.pc,
-            //         "OpCode".yellow(),
-            //         self.bytecode[self.pc],
-            //     );
             //     break;
             // }
 
@@ -290,31 +300,59 @@ impl Runner {
             // Check if the interpretation was successful
             if result.is_err() {
                 // Store the execution error
+
+                // println!(" ===================================================================== ");
+                // println!("op_list: {:?}", op_list);
+                // println!("current op_code count is: {}", cnt);
+                // println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", my_opcode, read_op_tracer().structLogs[cnt].op, self.pc, read_op_tracer().structLogs[cnt].pc);
+                // println!("call deepth is {}", self.call_depth);
+                // println!(
+                //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n ",
+                //     "ERROR:".red(),
+                //     "Runtime error".red(),
+                //     "PC".yellow(),
+                //     self.pc,
+                //     "OpCode".yellow(),
+                //     self.bytecode[self.pc],
+                // );
+                //
+                // self.debug_memory();
+                // self.debug_stack();
+                // // self.debug_storage();
+                // break;
+
+
                 error = Some(result.unwrap_err());
                 break;
             }
-            cnt = cnt + 1;
+            self.op_count += 1;
 
         }
-        println!("op_list: {:?}", op_list);
 
         /* -------------------------------------------------------------------------- */
         /*                            Print execution error                           */
         /* -------------------------------------------------------------------------- */
 
         if error.is_some() {
-            println!("address is {:?} {:?}", self.address, self.address.len());
-            println!("call deepth is {}", self.call_depth);
+            // println!("address is {:?} {:?}", self.address, self.address.len());
+            // println!("call deepth is {}", self.call_depth);
+            // println!("op count is {}", self.op_count);
+            //
+            // println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", self.bytecode[self.pc], read_op_tracer().structLogs[self.op_count as usize].op, self.pc, read_op_tracer().structLogs[self.op_count as usize].pc);
+            //
+            // self.debug_memory();
+            // self.debug_stack();
 
             println!(
-                "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {} ",
+                "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
                 "ERROR:".red(),
                 "Runtime error".red(),
                 "PC".yellow(),
                 self.pc,
                 "OpCode".yellow(),
                 self.bytecode[self.pc],
-                error.as_ref().unwrap().to_string().red()
+                error.as_ref().unwrap().to_string().red(),
+                self.op_count
             );
 
             return Err(error.unwrap());
@@ -461,7 +499,7 @@ impl Runner {
             0x19 => op_codes::bitwise::not(self),
             0x1b => op_codes::bitwise::shl(self),
             0x1c => op_codes::bitwise::shr(self),
-            0x20 => op_codes::bitwise::sha(self),
+            0x20 => op_codes::bitwise::sha3(self),
 
             /* ---------------------------- Environment OpCodes ------------------------- */
             0x30 => op_codes::environment::address(self),
@@ -555,26 +593,37 @@ impl Runner {
         let initial_pc = self.pc.clone();
         let initial_bytecode = self.bytecode.clone();
 
+        // Transfer the value
+        if !value.eq(&[0u8; 32]) && !self.state.static_mode{
+            self
+                .state
+                .transfer(self.address, self.caller, value)?;
+        }
+
         // Update runner state
         if !delegate {
             self.caller = self.address.clone();
             self.callvalue = value;
             self.address = to;
         }
+
         self.call_depth += 1;
         self.calldata = Memory::new(Some(calldata));
         self.returndata = Memory::new(None);
+
         self.memory = Memory::new(None);
         self.stack = Stack::new();
         self.pc = 0;
 
         // Interpret the bytecode
-        let code = self.state.get_code_at(to)?.to_owned();
-        let interpret_result = self.interpret(code, false);
+        let mut code = self.state.get_code_at(to);
 
-        // Check if the interpretation was successful
-        if interpret_result.is_err() {
-            error = Some(interpret_result.unwrap_err());
+        if code.is_some() {
+            let interpret_result = self.interpret(code.unwrap().to_owned(), false);
+            // Check if the interpretation was successful
+            if interpret_result.is_err() {
+                error = Some(interpret_result.unwrap_err());
+            }
         }
 
         // Get the return data
@@ -623,8 +672,8 @@ impl Runner {
             "Final stack".yellow(),
             "║".green()
         );
-        println!("{}", footer_line.clone().green());
 
+        println!("{}", footer_line.clone().green());
         let mut reversed_stack = self.stack.stack.clone();
         reversed_stack.reverse();
 

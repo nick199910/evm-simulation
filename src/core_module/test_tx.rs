@@ -3,6 +3,7 @@ use std::mem::transmute;
 use std::process;
 use std::str::FromStr;
 use std::sync::Arc;
+use alloy_primitives::B256;
 use ethers::addressbook::Address;
 use ethers::prelude::{Bytes, GethDebugBuiltInTracerConfig, GethDebugTracerConfig, GethDebugTracerType, GethDebugTracingOptions, Http, PreStateConfig, PreStateFrame, Provider, U64};
 use ethers::prelude::GethDebugBuiltInTracerType::PreStateTracer;
@@ -13,75 +14,122 @@ use primitive_types::{H256, U256};
 pub use serde::Deserialize;
 use super::memory::Memory;
 pub use serde::Serialize;
+use crate::core_module::env::EvmContext;
 use crate::core_module::runner::Runner;
 use crate::core_module::state::EvmState;
 use crate::core_module::test_account::AccountStateEx;
 use crate::core_module::utils::bytes::{pad_left, to_h256};
 
 #[derive(Debug, Clone)]
-pub struct Transaction {
+pub struct TransactionEnv {
     /// The transaction's hash
-    pub hash: H256,
+    pub tx_hash: H256,
 
     /// The transaction's nonce
-    pub nonce: U256,
+    pub nonce: [u8; 32],
 
     /// Block hash. None when pending.
-    pub block_hash: Option<H256>,
+    pub block_hash: Option<[u8; 32]>,
 
-    pub block_number: Option<U64>,
+    pub block_number: Option<[u8; 32]>,
 
-    pub transaction_index: Option<U64>,
+    pub coinbase: Option<[u8; 20]>,
 
-    pub from: Address,
+    pub timestamp: Option<[u8; 32]>,
 
-    pub to: Option<Address>,
+    pub from: [u8; 20],
+
+    pub to: Option<[u8; 20]>,
 
     /// Transferred value
-    pub value: U256,
+    pub value: [u8; 32],
 
-    pub gas_price: Option<U256>,
+    pub gas_price: Option<[u8; 32]>,
 
     /// Gas amount
-    pub gas: U256,
+    pub gas: [u8; 32],
 
     /// Input data
     pub calldata: Memory,
 
-    pub transaction_type: Option<U64>,
+    pub basefee: Option<[u8; 32]>,
 
-    pub max_priority_fee_per_gas: Option<U256>,
-    
-    pub max_fee_per_gas: Option<U256>,
+    pub difficulty: Option<[u8; 32]>,
+
+    pub prevrandao: Option<B256>,
 
     pub chain_id: Option<U256>,
 
 }
 
 
-async fn get_transaction_content(provider: Provider<Http>, tx_hash: TxHash) -> Result<Transaction, ProviderError> {
+async fn get_transaction_content(provider: Provider<Http>, tx_hash: TxHash) -> Result<TransactionEnv, ProviderError> {
 
     let transaction = provider.get_transaction(tx_hash).await.expect("get transaction hash error");
 
     let calldata = transaction.clone().unwrap().input.to_vec();
 
-    println!("{:?}", calldata);
+    let block_number = transaction.clone().unwrap().block_number.unwrap();
+    let block_info = provider.get_block(block_number).await.expect("get block error");
 
-    Ok(Transaction{
-        hash: transaction.clone().unwrap().hash,
-        nonce: transaction.clone().unwrap().nonce,
-        block_hash: transaction.clone().unwrap().block_hash,
-        block_number: transaction.clone().unwrap().block_number,
-        transaction_index: transaction.clone().unwrap().transaction_index,
-        from: transaction.clone().unwrap().from,
-        to: transaction.clone().unwrap().to,
-        value: transaction.clone().unwrap().value,
-        gas_price: transaction.clone().unwrap().gas_price,
-        gas: transaction.clone().unwrap().gas,
+    // get transaction nonce
+    let mut nonce = [0u8; 32];
+    transaction.clone().unwrap().nonce.to_big_endian(&mut nonce);
+
+    // get transaction block_number[u8; 32]
+    let mut _block_number = [0u8; 8];
+    // transaction.clone().unwrap().block_number.unwrap().
+    transaction.clone().unwrap().block_number.unwrap().to_big_endian(&mut _block_number);
+    let block_number = pad_left(&_block_number);
+
+    // get transaction to [u8; 32]
+    let to = if let Some(to) = transaction.clone().unwrap().to {
+        to.0
+    } else {
+        [0u8; 20]
+    };
+
+    // get transaction value
+    let mut value = [0u8; 32];
+    transaction.clone().unwrap().value.to_big_endian(&mut value);
+
+    // get transaction gas_price
+    let mut gas_price = [0u8; 32];
+    transaction.clone().unwrap().gas_price.unwrap().to_big_endian(&mut gas_price);
+
+    // get transaction gas
+    let mut gas = [0u8; 32];
+    transaction.clone().unwrap().gas.to_big_endian(&mut gas);
+
+    // get transaction basefee
+    let mut basefee = [0u8; 32];
+    transaction.clone().unwrap().max_fee_per_gas.unwrap().to_big_endian(&mut basefee);
+
+    // get transaction difficulty
+    let mut difficulty = [0u8; 32];
+    block_info.clone().unwrap().difficulty.to_big_endian(&mut difficulty);
+
+    // get transaction timestamp
+    let mut timestamp = [0u8; 32];
+    block_info.clone().unwrap().timestamp.to_big_endian(& mut timestamp);
+
+
+    Ok(TransactionEnv {
+        tx_hash: transaction.clone().unwrap().hash,
+        nonce: nonce,
+        block_hash: Some(transaction.clone().unwrap().block_hash.unwrap().0),
+        block_number: Some(block_number),
+        coinbase: Some(block_info.clone().unwrap().author.unwrap().0),
+        timestamp: Some(timestamp),
+        from: transaction.clone().unwrap().from.0,
+        to: Some(to),
+        value: value,
+        gas_price: Some(gas_price),
+        gas: gas,
         calldata: Memory::new(Some(calldata)),
-        transaction_type: transaction.clone().unwrap().transaction_type,
-        max_priority_fee_per_gas: transaction.clone().unwrap().max_priority_fee_per_gas,
-        max_fee_per_gas: transaction.clone().unwrap().max_fee_per_gas,
+        basefee: Some(basefee),
+        difficulty: Some(difficulty),
+        prevrandao: None,
         chain_id: transaction.clone().unwrap().chain_id,
     })
 }
@@ -95,7 +143,6 @@ pub(crate) enum StateTracerType {
     TurnOnDiffPost
 }
 
-
 fn get_test_account_msg() -> AccountStateEx {
     let code = "0x608060405234801561000f575f80fd5b506004361061003f575f3560e01c80633fb5c1cb14610043578063893d20e81461005f578063a6f9dae114610069575b5f80fd5b61005d6004803603810190610058919061011e565b610085565b005b61006761009a565b005b610083600480360381019061007e91906101a3565b6100a5565b005b600c8110156100975760056001819055505b50565b6100a3336100a5565b565b805f806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b5f80fd5b5f819050919050565b6100fd816100eb565b8114610107575f80fd5b50565b5f81359050610118816100f4565b92915050565b5f60208284031215610133576101326100e7565b5b5f6101408482850161010a565b91505092915050565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f61017282610149565b9050919050565b61018281610168565b811461018c575f80fd5b50565b5f8135905061019d81610179565b92915050565b5f602082840312156101b8576101b76100e7565b5b5f6101c58482850161018f565b9150509291505056fea26469706673582212205583d88608fb17547ba77bd69a991b8647738b63e2a17f2d3a0c5dfd1fa118a364736f6c63430008160033";
     AccountStateEx{
@@ -108,7 +155,7 @@ fn get_test_account_msg() -> AccountStateEx {
     }
 }
 
-#[tokio::test]
+// #[tokio::test]
 async fn test_no_state_run() -> Result<(), ProviderError> {
 
     let sepolia_rpc = "https://rough-frosty-field.ethereum-sepolia.quiknode.pro/40fa9bf59d6007a200145efb93862af9a528e8ae/";
@@ -122,10 +169,10 @@ async fn test_no_state_run() -> Result<(), ProviderError> {
     let test_account_msg = get_test_account_msg();
 
 
-    let mut caller = transaction_content.clone().from.0;
+    let mut caller = transaction_content.clone().from;
     let mut origin: Option<[u8; 20]> = None;
-    let mut address: Option<[u8; 20]> = Some(transaction_content.to.unwrap().0);
-    let mut value: Option<[u8; 32]> = None;
+    let mut address: Option<[u8; 20]> = Some(transaction_content.to.unwrap());
+    let mut value: Option<[u8; 32]> = Some(transaction_content.value);
     let mut data: Option<Vec<u8>> = Some(transaction_content.calldata.heap);
     let mut bytecode: String = test_account_msg.code.unwrap();
 
@@ -152,7 +199,6 @@ async fn test_no_state_run() -> Result<(), ProviderError> {
             println!("successful!!!!")
         }
     }
-
     Ok(())
 }
 
@@ -168,28 +214,22 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
     let Templedao_tx = "0x8c3f442fc6d640a6ff3ea0b12be64f1d4609ea94edd2966f42c01cd9bdcf04b5"; // 可行
 
     // Obtain the pre-transaction account state
-    let accounts_state_pre_tx = get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(uniswap_v2_attack), false).await;
+    let accounts_state_pre_tx = get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(euler_attack), false).await;
 
     // Obtain the transaction context
-    let transaction_content = get_transaction_content(provider, TxHash::from_str(uniswap_v2_attack).unwrap()).await.expect("get transaction hash error");
+    let transaction_content = get_transaction_content(provider, TxHash::from_str(euler_attack).unwrap()).await.expect("get transaction hash error");
 
     let state: EvmState;
     state = EvmState::new(None);
 
     // Set the transaction context for the virtual machine
-    let caller = transaction_content.from.0;
-    let origin= transaction_content.from.0;
-    let address = transaction_content.to.unwrap().0;
-
-    let value_u64 = transaction_content.value.0;
-    let mut value = [0u8; 32];
-
-    for i in 0..4 {
-        let bytes = value_u64[i].to_le_bytes(); // or to_be_bytes() for big-endian
-        value[i * 8..(i + 1) * 8].copy_from_slice(&bytes);
-    }
-
+    let caller = transaction_content.from;
+    let origin= transaction_content.from;
+    let address = transaction_content.to.unwrap();
+    let value = transaction_content.value;
     let data = transaction_content.calldata.heap;
+
+
 
     // Create a new interpreter
     let mut interpreter =
@@ -199,7 +239,22 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
         interpreter.modify_account_state(_addr.0, _account_state_ex.clone());
     });
 
-    let bytecode = accounts_state_pre_tx.get(&transaction_content.to.unwrap()).unwrap().code.as_ref().unwrap();
+    // set evm state env
+    let mut evm_context = EvmContext::new(); // Adjust this based on your actual implementation
+
+    // Now update the fields
+    evm_context.gas_price = transaction_content.gas_price;
+    evm_context.block_number = transaction_content.block_number;
+    evm_context.basefee = transaction_content.basefee;
+    evm_context.coinbase = transaction_content.coinbase;
+    evm_context.blockhash = transaction_content.block_hash;
+    evm_context.difficulty = transaction_content.difficulty;
+    evm_context.timestamp = transaction_content.timestamp;
+
+    interpreter.evm_context = Some(evm_context);
+
+
+    let bytecode = accounts_state_pre_tx.get(&Address::from_slice(&transaction_content.to.unwrap())).unwrap().code.as_ref().unwrap();
 
     // Check if bytecode is an hex value of a file path
     if bytecode.starts_with("0x") {
@@ -211,8 +266,6 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
             println!("successful!!!!")
         }
     }
-
-
 
     Ok(())
 }
@@ -231,6 +284,7 @@ async fn get_accounts_state_pre_tx(
     let mut options = GethDebugTracingOptions::default();
     options.tracer = Some(GethDebugTracerType::BuiltInTracer(PreStateTracer));
     options.tracer_config = Some(tracer_config);
+
 
 
     let tracer_info = provider.debug_trace_transaction(tx_hash, options).await.unwrap_or_else(|err| {

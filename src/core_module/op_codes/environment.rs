@@ -8,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 // Primitive types
 use ethers::types::U256;
 use ethers::utils::keccak256;
+use crate::core_module::env::EvmContext;
 
 pub fn address(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = pad_left(&runner.address);
@@ -128,7 +129,7 @@ pub fn calldatacopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 pub fn codesize(runner: &mut Runner) -> Result<(), ExecutionError> {
     let code = runner.state.get_code_at(runner.address);
 
-    let codesize = if code.is_err() {
+    let codesize = if code.is_none() {
         [0u8; 32]
     } else {
         pad_left(&code.unwrap().len().to_be_bytes())
@@ -152,7 +153,7 @@ pub fn codecopy(runner: &mut Runner) -> Result<(), ExecutionError> {
     let code = runner.state.get_code_at(runner.address);
 
     // Slice the code to the correct size
-    let code = if code.is_err() {
+    let code = if code.is_none() {
         vec![]
     } else {
         // complete the code with 0s
@@ -171,7 +172,18 @@ pub fn codecopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn gasprice(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let gasprice = pad_left(&[0xff]);
+    let gasprice = match &runner.evm_context {
+        None => {
+            pad_left(&[0xff])
+        }
+        Some(evm_context) => {
+            if let Some(gas_price) = evm_context.gas_price {
+                gas_price
+            } else {
+                pad_left(&[0xff])
+            }
+        }
+    };
 
     let result = runner.stack.push(gasprice);
 
@@ -188,7 +200,7 @@ pub fn extcodesize(runner: &mut Runner) -> Result<(), ExecutionError> {
 
     let code = runner.state.get_code_at(bytes32_to_address(&address));
 
-    let codesize = if code.is_err() {
+    let codesize = if code.is_none() {
         [0u8; 32]
     } else {
         pad_left(&code.unwrap().len().to_be_bytes())
@@ -213,7 +225,7 @@ pub fn extcodecopy(runner: &mut Runner) -> Result<(), ExecutionError> {
     let code = runner.state.get_code_at(bytes32_to_address(&address));
 
     // Slice the code to the correct size
-    let code = if code.is_err() {
+    let code = if code.is_none() {
         vec![]
     } else {
         // complete the code with 0s
@@ -267,17 +279,17 @@ pub fn returndatacopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 pub fn extcodehash(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = runner.stack.pop()?;
 
-    let code = runner.state.get_code_at(bytes32_to_address(&address))?;
-    let codehash = keccak256(&code);
+    Ok(if let Some(code) = runner.state.get_code_at(bytes32_to_address(&address)) {
+        let codehash = keccak256(code);
+        let result = runner.stack.push(codehash);
+        if result.is_err() {
+            return Err(result.unwrap_err());
+        }
 
-    let result = runner.stack.push(codehash);
+        // Increment PC
+        runner.increment_pc(1);
+    })
 
-    if result.is_err() {
-        return Err(result.unwrap_err());
-    }
-
-    // Increment PC
-    runner.increment_pc(1)
 }
 
 pub fn blockhash(runner: &mut Runner) -> Result<(), ExecutionError> {
@@ -298,7 +310,21 @@ pub fn blockhash(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn coinbase(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let coinbase = pad_left(&[0xc0u8; 20]);
+    // let coinbase = pad_left(&[0xc0u8; 20]);
+
+    let coinbase = match &runner.evm_context {
+        None => {
+            pad_left(&[0xc0u8; 20])
+        }
+        Some(evm_context) => {
+            if let Some(coinbase) = evm_context.coinbase {
+                pad_left(&coinbase)
+            } else {
+                // Provide a default value if evm_context.coinbase is None
+                pad_left(&[0xc0u8; 20])
+            }
+        }
+    };
 
     let result = runner.stack.push(coinbase);
 
@@ -311,19 +337,22 @@ pub fn coinbase(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn timestamp(runner: &mut Runner) -> Result<(), ExecutionError> {
-    // Get the current timestamp
-    let now = SystemTime::now();
-    let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
 
     // Convert the timestamp to seconds
-    let timestamp_secs = since_the_epoch.as_secs();
+    let timestamp_secs = match &runner.evm_context {
+        None => {
+            pad_left(&[0x00; 20])
+        }
+        Some(evm_context) => {
+            if let Some(timestamp_secs) = evm_context.timestamp {
+                timestamp_secs
+            } else {
+                pad_left(&[0x00; 20])
+            }
+        }
+    };
 
-    // Convert the timestamp to bytes in big-endian order
-    let timestamp_bytes = timestamp_secs.to_be_bytes();
-
-    let bytes = pad_left(&timestamp_bytes);
-
-    let result = runner.stack.push(bytes);
+    let result = runner.stack.push(timestamp_secs);
 
     if result.is_err() {
         return Err(result.unwrap_err());
@@ -333,7 +362,19 @@ pub fn timestamp(runner: &mut Runner) -> Result<(), ExecutionError> {
     runner.increment_pc(1)
 }
 pub fn number(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let number = pad_left(&[0xff; 4]);
+
+    let number = match &runner.evm_context {
+        None => {
+            pad_left(&[0xff; 4])
+        }
+        Some(evm_context) => {
+            if let Some(number) = evm_context.block_number {
+                number
+            } else {
+                pad_left(&[0xff; 4])
+            }
+        }
+    };
 
     let result = runner.stack.push(number);
 
@@ -345,6 +386,7 @@ pub fn number(runner: &mut Runner) -> Result<(), ExecutionError> {
     runner.increment_pc(1)
 }
 
+// 这个地方有疑问
 pub fn difficulty(runner: &mut Runner) -> Result<(), ExecutionError> {
     let difficulty = pad_left(&[0x45; 8]);
 
@@ -359,7 +401,19 @@ pub fn difficulty(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn gaslimit(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let gaslimit = pad_left(&[0x01, 0xC9, 0xC3, 0x80]);
+
+    let gaslimit = match &runner.evm_context {
+        None => {
+            pad_left(&[0x01, 0xC9, 0xC3, 0x80])
+        }
+        Some(evm_context) => {
+            if let Some(gaslimit) = evm_context.gas_limit {
+                gaslimit
+            } else {
+                pad_left(&[0x01, 0xC9, 0xC3, 0x80])
+            }
+        }
+    };
 
     let result = runner.stack.push(gaslimit);
 
@@ -398,7 +452,19 @@ pub fn selfbalance(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn basefee(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let basefee = pad_left(&[0x0a]);
+
+    let basefee = match &runner.evm_context {
+        None => {
+            pad_left(&[0x0a])
+        }
+        Some(evm_context) => {
+            if let Some(basefee) = evm_context.basefee {
+                basefee
+            } else {
+                pad_left(&[0x0a])
+            }
+        }
+    };
 
     let result = runner.stack.push(basefee);
 

@@ -337,42 +337,15 @@ impl EvmState {
     /// # Returns
     ///
     /// Returns a reference to the Vec<u8> of the code.
-    pub fn get_code_at(&mut self, address: [u8; 20]) -> Result<&Vec<u8>, ExecutionError> {
-        match self.accounts.get(&address) {
-            Some(account_state) => {
-                let code_hash = account_state.code_hash;
-                self.get_code(code_hash)
-            }
-            None => {
-                let provider = self.provider.as_ref();
-
-                if provider.is_none() {
-                    return Err(ExecutionError::CodeNotFound);
-                }
-
-                // Asynchronously fetch the code from the blockchain
-                let contract_address = Address::from(address);
-
-                let future = provider.unwrap().get_code(contract_address, None);
-
-                // Block on the future and get the result
-                let code_result = tokio::runtime::Runtime::new()
-                    .expect("Could not create a Runtime")
-                    .block_on(future);
-
-                match code_result {
-                    Ok(code) => {
-                        let code_hash = keccak256(&code.0);
-                        if let Some(account) = self.accounts.get_mut(&address) {
-                            account.code_hash = code_hash;
-                        }
-                        self.codes.insert(code_hash, code.to_vec());
-                        Ok(&self.codes[&code_hash])
-                    }
-                    Err(_) => Err(ExecutionError::CodeNotFound),
-                }
-            }
-        }
+    pub fn get_code_at(&self, address: [u8; 20]) -> Option<&Vec<u8>> {
+        let account_state = self.accounts.get(&address);
+        let code = if let Some(_account_state) = account_state {
+            let code_hash = _account_state.code_hash;
+            self.get_code(code_hash)
+        } else {
+            None
+        };
+        code
     }
 
     pub fn put_code_at(&mut self, address: [u8; 20], code: Vec<u8>) -> Result<(), ExecutionError> {
@@ -388,10 +361,9 @@ impl EvmState {
     }
 
 
-    fn get_code(&self, code_hash: [u8; 32]) -> Result<&Vec<u8>, ExecutionError> {
+    fn get_code(&self, code_hash: [u8; 32]) -> Option<&Vec<u8>> {
         self.codes
-            .get(&code_hash)
-            .ok_or(ExecutionError::CodeNotFound)
+            .get(&code_hash).to_owned()
     }
 
     /// Store contract code and return its hash

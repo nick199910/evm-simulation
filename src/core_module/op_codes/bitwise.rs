@@ -136,7 +136,7 @@ pub fn shr(runner: &mut Runner) -> Result<(), ExecutionError> {
     runner.increment_pc(1)
 }
 
-pub fn sha(runner: &mut Runner) -> Result<(), ExecutionError> {
+pub fn sha3(runner: &mut Runner) -> Result<(), ExecutionError> {
     let pop1 = runner.stack.pop()?;
     let pop2 = runner.stack.pop()?;
 
@@ -264,7 +264,7 @@ mod tests {
         mstore(&mut runner).unwrap();
         let _ = runner.stack.push(pad_left(&[0x04]));
         let _ = runner.stack.push(pad_left(&[0x00]));
-        sha(&mut runner).unwrap();
+        sha3(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
         let expected_output = [

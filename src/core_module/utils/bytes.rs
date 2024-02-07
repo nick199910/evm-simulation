@@ -263,7 +263,7 @@ pub fn get_op_code(op_number: u8) -> &'static str {
         0x19 => "NOT",
         0x1b => "SHL",
         0x1c => "SHR",
-        0x20 => "SHA",
+        0x20 => "KECCAK256",
 
         /* ---------------------------- Environment OpCodes ------------------------- */
         0x30 => "ADDRESS",

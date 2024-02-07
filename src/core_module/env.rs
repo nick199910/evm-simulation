@@ -2,26 +2,25 @@ use primitive_types::U256;
 use alloy_primitives::B256;
 
 #[derive(Debug)]
-pub struct BlockEnv {
-    /// The number of ancestor blocks of this block (block height).
-    pub number: [u8; 32],
-    /// Coinbase or miner or address that created and signed the block.
-    ///
-    /// This is the receiver address of all the gas spent in the block.
-    pub coinbase: [u8; 20],
+pub struct EvmContext {
+    pub blockhash: Option<[u8; 32]>,
 
-    /// The timestamp of the block in seconds since the UNIX epoch.
-    pub timestamp: [u8; 32],
-    /// The gas limit of the block.
-    pub gas_limit: U256,
-    /// The base fee per gas, added in the London upgrade with [EIP-1559].
-    ///
-    /// [EIP-1559]: https://eips.ethereum.org/EIPS/eip-1559
-    pub basefee: U256,
+    pub block_number: Option<[u8; 32]>,
+
+    pub coinbase: Option<[u8; 20]>,
+
+    pub timestamp: Option<[u8; 32]>,
+
+    pub gas_price: Option<[u8; 32]>,
+
+    pub gas_limit: Option<[u8; 32]>,
+
+    pub basefee: Option<[u8; 32]>,
+
     /// The difficulty of the block.
     ///
     /// Unused after the Paris (AKA the merge) upgrade, and replaced by `prevrandao`.
-    pub difficulty: U256,
+    pub difficulty: Option<[u8; 32]>,
     /// The output of the randomness beacon provided by the beacon chain.
     ///
     /// Replaces `difficulty` after the Paris (AKA the merge) upgrade with [EIP-4399].
@@ -30,15 +29,20 @@ pub struct BlockEnv {
     ///
     /// [EIP-4399]: https://eips.ethereum.org/EIPS/eip-4399
     pub prevrandao: Option<B256>,
-
-}
-#[derive(Debug)]
-pub struct Env {
-    /// Configuration of the block the transaction is in.
-    pub block: BlockEnv,
 }
 
-#[derive(Debug)]
-pub struct EvmContext {
-    pub env: Env,
+impl EvmContext {
+    pub fn new() -> Self {
+        Self {
+            blockhash: None,
+            block_number: None,
+            coinbase: None,
+            timestamp: None,
+            gas_price: None,
+            gas_limit: None,
+            basefee: None,
+            difficulty: None,
+            prevrandao: None,
+        }
+    }
 }
