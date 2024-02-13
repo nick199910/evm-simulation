@@ -24,16 +24,17 @@ pub fn create(runner: &mut Runner) -> Result<(), ExecutionError> {
     let init_code = unsafe { runner.memory.read(offset.as_usize(), size.as_usize())? };
 
     let caller = &runner.caller;
-    // Compute the contract address
+
+    // Compute the contract address, 计算出的合约地址不同是否会影响接下来的逻辑
     let mut input = vec![0xd6, 0x94];
-    input.extend_from_slice(&runner.caller);
+    input.extend_from_slice(caller);
     input.extend_from_slice(&bytes::strip_zero_padding(&get_nonce(
         runner.address,
         runner,
     )?));
-
     let hash = keccak256(input);
     let contract_address: [u8; 20] = hash[12..].try_into().unwrap();
+    println!("contract_address: {:?}", contract_address);
 
     // Create the contract with init code as code
     init_account(contract_address, runner)?;
@@ -169,6 +170,13 @@ pub fn call(runner: &mut Runner, bypass_static: bool) -> Result<(), ExecutionErr
             .write(returndata_offset.as_usize(), return_data)?
     };
 
+    // Transfer the value
+    if !value.eq(&[0u8; 32]) {
+        runner
+            .state
+            .transfer(runner.address, bytes32_to_address(&to), value)?;
+    }
+
     // Increment PC
     runner.increment_pc(1)
 }
@@ -207,8 +215,6 @@ pub fn delegatecall(runner: &mut Runner) -> Result<(), ExecutionError> {
     } else {
         runner.stack.push(pad_left(&[0x01]))?;
     }
-
-    let return_data = runner.returndata.heap.clone();
 
     let mut return_data: Vec<u8> = runner.returndata.heap.clone();
 
@@ -301,9 +307,11 @@ mod tests {
             _hex_string_to_bytes("6c63ffffffff6000526004601cf3600052600d601360fff0"),
             true,
         );
+
         assert!(interpret_result.is_ok());
 
         let result = runner.stack.pop().unwrap();
+
         assert_eq!(
             result,
             pad_left(&[
@@ -431,7 +439,6 @@ mod tests {
         );
         assert!(interpret_result.is_ok());
 
-
         let address = runner.stack.pop().unwrap();
         println!("address is: {:?}", address);
         assert_eq!(
@@ -445,7 +452,6 @@ mod tests {
         let stored_code = runner.state.get_code_at(bytes32_to_address(&address));
 
         assert_eq!(stored_code.unwrap(), &_hex_string_to_bytes("ff"));
-
 
         let balance = get_balance(bytes32_to_address(&address), &mut runner).unwrap();
         assert_eq!(balance, pad_left(&[0xaa]));
@@ -471,7 +477,6 @@ mod tests {
         // Self destruct the contract by calling it
 
         let addr = runner.address;
-
 
         let selfdestruct_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes(bytecode), true);

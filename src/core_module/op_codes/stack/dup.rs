@@ -208,10 +208,7 @@ mod tests {
     fn test_dup3() {
         let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
 
-        let _ = runner.interpret(
-            vec![0x60, 0xff, 0x60, 0x01, 0x60, 0x01, 0x82],
-            true,
-        );
+        let _ = runner.interpret(vec![0x60, 0xff, 0x60, 0x01, 0x60, 0x01, 0x82], true);
         assert_eq!(runner.stack.stack.len(), 4);
         assert_eq!(runner.stack.stack.first(), runner.stack.stack.last());
     }

@@ -3,6 +3,7 @@ use crate::core_module::utils;
 use crate::core_module::utils::errors::ExecutionError;
 
 // Primitive types
+use crate::core_module::utils::bytes::{u64_to_u256_array, u64_x4_array_to_u8_x32_array};
 use ethers::types::U256;
 use ethers::utils::keccak256;
 
@@ -157,9 +158,42 @@ pub fn sha3(runner: &mut Runner) -> Result<(), ExecutionError> {
     runner.increment_pc(1)
 }
 
+// x (b+1) * 8 -> x 256
+pub fn signextend(runner: &mut Runner) -> Result<(), ExecutionError> {
+    let pop1 = runner.stack.pop()?;
+    let pop2 = runner.stack.pop()?;
+
+    let x = U256::from_big_endian(&pop1);
+    let y = U256::from_big_endian(&pop2);
+
+    if x > U256::from(31) {
+        runner.stack.push(pop2)?;
+    } else {
+        // 符号位是第几位
+        let t = U256::from(256) - U256::from(8) * (x + U256::from(1));
+
+        // 8x + 7
+        let bit_index = U256::from(255) - t;
+
+        // 0 是正数 1是负数
+        let bit = y.bit(bit_index.as_usize());
+
+        let mask = (U256::from(1) << bit_index) - U256::from(1);
+
+        let result = if bit { y | !mask } else { y & mask };
+
+        let ret = u64_x4_array_to_u8_x32_array(result);
+
+        runner.stack.push(ret)?;
+    }
+    // Increment PC
+    runner.increment_pc(1)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core_module::utils::bytes::pad_left_one;
     use crate::core_module::{op_codes::memory::mstore, utils::bytes::pad_left};
 
     #[test]
@@ -275,5 +309,36 @@ mod tests {
 
         assert_eq!(result, expected_output);
         assert_eq!(runner.stack.stack.len(), 0);
+    }
+
+    #[test]
+    pub fn test_signextend() -> Result<(), ExecutionError> {
+        let mut runner = Runner::_default(3);
+
+        let _ = runner.stack.push(pad_left(&[0xff]));
+        let _ = runner.stack.push(pad_left(&[0x00]));
+
+        signextend(&mut runner).unwrap();
+
+        let result = runner.stack.pop().unwrap();
+        let expected_result = pad_left_one(&[0xff]);
+        assert_eq!(result, expected_result);
+        assert_eq!(runner.stack.stack.len(), 0);
+
+        let _ = runner.stack.push(pad_left(&[
+            0x0b, 0xb8, 0x00, 0x04, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x05, 0x17,
+            0xb5, 0xcf, 0x78, 0xea, 0x82, 0x54,
+        ]));
+        let _ = runner.stack.push(pad_left(&[0x0b]));
+        signextend(&mut runner).unwrap();
+        let result = runner.stack.pop().unwrap();
+
+        // let hex: String =
+        //     utils::debug::to_hex_string(result.as_slice().try_into().unwrap());
+        // println!("{}", hex);
+        // let expected_result = pad_left_one(&[0xff]);
+        // assert_eq!(result, expected_result);
+        // assert_eq!(runner.stack.stack.len(), 0);
+        Ok(())
     }
 }

@@ -1,5 +1,5 @@
-use primitive_types::U256;
 use alloy_primitives::B256;
+use primitive_types::U256;
 
 #[derive(Debug)]
 pub struct EvmContext {

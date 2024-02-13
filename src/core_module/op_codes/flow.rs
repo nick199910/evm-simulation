@@ -123,10 +123,8 @@ mod tests {
     #[test]
     fn test_stop() {
         let mut runner = Runner::_default(3);
-        let interpret_result = runner.interpret(
-            _hex_string_to_bytes("600160026003600400600560066007"),
-            true,
-        );
+        let interpret_result =
+            runner.interpret(_hex_string_to_bytes("600160026003600400600560066007"), true);
         assert!(interpret_result.is_ok());
 
         let result: [u8; 32] = runner.stack.pop().unwrap();
@@ -146,8 +144,7 @@ mod tests {
     #[test]
     fn test_jump() {
         let mut runner = Runner::_default(3);
-        let interpret_result =
-            runner.interpret(_hex_string_to_bytes("600456fe5b6001"), true);
+        let interpret_result = runner.interpret(_hex_string_to_bytes("600456fe5b6001"), true);
         assert!(interpret_result.is_ok());
 
         let result: [u8; 32] = runner.stack.pop().unwrap();
@@ -158,10 +155,8 @@ mod tests {
     #[test]
     fn test_jumpi() {
         let mut runner = Runner::_default(3);
-        let interpret_result = runner.interpret(
-            _hex_string_to_bytes("6000600a576001600c575bfe5b6001"),
-            true,
-        );
+        let interpret_result =
+            runner.interpret(_hex_string_to_bytes("6000600a576001600c575bfe5b6001"), true);
         assert!(interpret_result.is_ok());
 
         let result: [u8; 32] = runner.stack.pop().unwrap();
@@ -180,10 +175,8 @@ mod tests {
         assert_eq!(runner.pc, 1);
 
         let mut runner = Runner::_default(3);
-        let interpret_result = runner.interpret(
-            _hex_string_to_bytes("60ff60ff60ff60ff60ff58"),
-            true,
-        );
+        let interpret_result =
+            runner.interpret(_hex_string_to_bytes("60ff60ff60ff60ff60ff58"), true);
         assert!(interpret_result.is_ok());
 
         let result: [u8; 32] = runner.stack.pop().unwrap();

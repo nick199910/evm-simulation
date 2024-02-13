@@ -119,7 +119,6 @@ pub fn log3(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn log4(runner: &mut Runner) -> Result<(), ExecutionError> {
-
     // Check if static mode is enabled
     if runner.state.static_mode {
         return Err(ExecutionError::StaticCallStateChanged);
@@ -181,10 +180,8 @@ mod tests {
     #[test]
     fn test_log1() {
         let mut runner = Runner::_default(3);
-        let interpret_result: Result<(), ExecutionError> = runner.interpret(
-            _hex_string_to_bytes("604260005260ff60206000a1"),
-            true,
-        );
+        let interpret_result: Result<(), ExecutionError> =
+            runner.interpret(_hex_string_to_bytes("604260005260ff60206000a1"), true);
         assert!(interpret_result.is_ok());
 
         let log = runner.state.logs.get(0).unwrap();
@@ -198,10 +195,8 @@ mod tests {
     #[test]
     fn test_log2() {
         let mut runner = Runner::_default(3);
-        let interpret_result: Result<(), ExecutionError> = runner.interpret(
-            _hex_string_to_bytes("6042600052606060ff60206000a2"),
-            true,
-        );
+        let interpret_result: Result<(), ExecutionError> =
+            runner.interpret(_hex_string_to_bytes("6042600052606060ff60206000a2"), true);
         assert!(interpret_result.is_ok());
 
         let log = runner.state.logs.get(0).unwrap();

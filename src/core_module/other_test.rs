@@ -1,23 +1,21 @@
-use std::collections::{BTreeMap, HashMap};
-use std::fs::File;
-use std::io::Read;
+use ethers::core::k256::sha2::digest::typenum::op;
+use ethers::types::GethDebugTracerConfig;
 use ethers::{
     core::types::{GethDebugTracingOptions, H256},
     providers::{Http, Middleware, Provider},
 };
-use std::str::FromStr;
-use ethers::core::k256::sha2::digest::typenum::op;
-use ethers::types::GethDebugTracerConfig;
 use primitive_types::U256;
 use serde::Deserialize;
-
+use std::collections::{BTreeMap, HashMap};
+use std::fs::File;
+use std::io::Read;
+use std::str::FromStr;
 
 /// use `debug_traceTransaction` to fetch traces
 /// requires, a valid endpoint in `RPC_URL` env var that supports `debug_traceTransaction`
 ///
 #[derive(Debug)]
 pub struct OpCodeContext {
-
     pub pc: u64,
 
     pub op_code: String,
@@ -29,9 +27,7 @@ pub struct OpCodeContext {
     pub storage: Option<BTreeMap<H256, H256>>,
 }
 
-
 async fn test_op_tracer() -> () {
-
     let euler_attack = "0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d";
     let uniswap_v2_attack = "0x45d108052e01c20f37fd05db462b9cef6629a70849bcd71b36291786ee6ee3e9";
     let usdc_transfer_tx = "0x890249a15f17950a60711c0396ccd147068365ea852f0837c08f55f9dd7c320e";
@@ -47,19 +43,21 @@ async fn test_op_tracer() -> () {
     let options = GethDebugTracingOptions::default();
     let traces = client.debug_trace_transaction(h, options).await.unwrap();
 
-    if let ethers::types::GethTrace::Known(ethers::types::GethTraceFrame::Default(
-                                               tracer_info
-    )) = traces {
+    if let ethers::types::GethTrace::Known(ethers::types::GethTraceFrame::Default(tracer_info)) =
+        traces
+    {
         // println!("{:?}", tracer_info);
-        let tracer_list:Vec<OpCodeContext> = tracer_info.struct_logs.into_iter().map(
-            |step| OpCodeContext {
+        let tracer_list: Vec<OpCodeContext> = tracer_info
+            .struct_logs
+            .into_iter()
+            .map(|step| OpCodeContext {
                 pc: step.pc,
-                op_code : step.op,
+                op_code: step.op,
                 memory: step.memory,
                 stack: step.stack,
                 storage: step.storage,
-            }
-        ).collect();
+            })
+            .collect();
 
         println!("{:?}", tracer_list[2]);
 
@@ -71,14 +69,9 @@ async fn test_op_tracer() -> () {
         //     .into_iter()
         //     .map(|step|
     }
-
-
-
-
 }
 
 async fn test_call_tracer() -> () {
-
     let euler_attack = "0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d";
     let uniswap_v2_attack = "0x45d108052e01c20f37fd05db462b9cef6629a70849bcd71b36291786ee6ee3e9";
     let usdc_transfer_tx = "0x890249a15f17950a60711c0396ccd147068365ea852f0837c08f55f9dd7c320e";
@@ -95,19 +88,21 @@ async fn test_call_tracer() -> () {
 
     let traces = client.debug_trace_transaction(h, options).await.unwrap();
 
-    if let ethers::types::GethTrace::Known(ethers::types::GethTraceFrame::Default(
-                                               tracer_info
-                                           )) = traces {
+    if let ethers::types::GethTrace::Known(ethers::types::GethTraceFrame::Default(tracer_info)) =
+        traces
+    {
         // println!("{:?}", tracer_info);
-        let tracer_list:Vec<OpCodeContext> = tracer_info.struct_logs.into_iter().map(
-            |step| OpCodeContext {
+        let tracer_list: Vec<OpCodeContext> = tracer_info
+            .struct_logs
+            .into_iter()
+            .map(|step| OpCodeContext {
                 pc: step.pc,
-                op_code : step.op,
+                op_code: step.op,
                 memory: step.memory,
                 stack: step.stack,
                 storage: step.storage,
-            }
-        ).collect();
+            })
+            .collect();
 
         println!("{:?}", tracer_list[2]);
 
@@ -138,9 +133,11 @@ pub struct LogData {
 }
 
 pub fn read_op_tracer() -> LogData {
-    let mut file = File::open("tracer_data/uniswap_v2_attack_tx_op_logs.json").expect("Unable to open the file");
+    let mut file =
+        File::open("tracer_data/euler_attack_tx_op_logs.json").expect("Unable to open the file");
     let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Unable to read the file");
+    file.read_to_string(&mut contents)
+        .expect("Unable to read the file");
 
     // 解析JSON数据
     let log_data: LogData = serde_json::from_str(&contents).expect("Unable to parse JSON");

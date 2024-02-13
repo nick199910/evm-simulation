@@ -45,13 +45,21 @@ const processJsonFile = (filePath, index) => {
     const structLogs = readJsonFile(filePath);
     if (structLogs) {
         const nthElement = getNthElement(structLogs, parseInt(index, 10));
-        console.log('Result:', nthElement);
+        // if (nthElement.op === "MSTORE") {
+            console.log('Result:', nthElement);
+
+        // }
     }
 };
 
-// 从命令行参数获取文件路径和索引
-const filePath = "uniswap_v2_attack_tx_op_logs.json";
-const index = "3291";
+// 获取文件路径和索引
+const filePath = "euler_attack_tx_op_logs.json";
+const index = "8350";
+
 // 调用封装的函数
-// processJsonFile(filePath, index);
-console.log("index is: ", getElementIndex(652721))
+// for (let i = parseInt(index); i >= parseInt(index) - 1000; i --) {
+    processJsonFile(filePath, index);
+// }
+
+// console.log("index is: ", getElementIndex(nthElement.gas))
+

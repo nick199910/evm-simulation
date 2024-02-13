@@ -18,14 +18,11 @@ fn main() -> Result<(), ExecutionError> {
     ]);
     let mut value: Option<[u8; 32]> = None;
     let mut data: Option<Vec<u8>> = None;
-    let mut bytecode: String = Default::default();;
+    let mut bytecode: String = Default::default();
     let state: EvmState;
     let mut debug_level: Option<u8> = Some(255);
 
     state = EvmState::new(None);
-
-
-
 
     // Create a new interpreter
     let mut interpreter =

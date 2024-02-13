@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::core_module::utils::bytes::{_hex_string_to_bytes, get_op_code, pad_left};
+use std::collections::HashMap;
 
 use super::memory::Memory;
 use super::op_codes;
@@ -9,13 +9,13 @@ use super::utils;
 use super::utils::environment::{increment_nonce, init_account};
 use super::utils::errors::ExecutionError;
 
-use ethers::types::U256;
 use super::other_test::read_op_tracer;
+use ethers::types::U256;
 
 // Colored output
-use colored::*;
 use crate::core_module::env::EvmContext;
 use crate::core_module::test_account::AccountStateEx;
+use colored::*;
 
 pub struct Runner {
     // Execution
@@ -38,11 +38,10 @@ pub struct Runner {
     pub stack: Stack,
 
     // EVM op_count
-
     pub op_count: u128,
 
     // EVM env
-    pub evm_context: Option<EvmContext>
+    pub evm_context: Option<EvmContext>,
 }
 
 /// Implementation of the Runner struct, which is responsible for executing EVM bytecode.
@@ -68,7 +67,7 @@ impl Runner {
         callvalue: Option<[u8; 32]>,
         calldata: Option<Vec<u8>>,
         state: Option<EvmState>,
-        evm_context: Option<EvmContext>
+        evm_context: Option<EvmContext>,
     ) -> Self {
         let mut instance = Self {
             // Set the program counter to 0
@@ -159,7 +158,7 @@ impl Runner {
             Some(EvmState::new(Some(String::from(
                 "https://eth.llamarpc.com",
             )))),
-            None
+            None,
         );
         runner
     }
@@ -194,7 +193,6 @@ impl Runner {
 
     /// 修改账户状态
     pub fn modify_account_state(&mut self, address: [u8; 20], account_state_ex: AccountStateEx) {
-
         // 1. Check if the address already exists in the EVM state
         // 2. If the address is not in the state, proceed to modify the code hash and account
         let storage = if let Some(storage) = account_state_ex.storage.clone() {
@@ -209,7 +207,7 @@ impl Runner {
             [0u8; 32]
         };
 
-        let account_state = AccountState{
+        let account_state = AccountState {
             nonce: account_state_ex.nonce.clone(),
             balance: account_state_ex.balance.clone(),
             storage: storage,
@@ -220,11 +218,12 @@ impl Runner {
         let _ = self.state.accounts.insert(address, account_state.clone());
 
         if !account_state.code_hash.clone().iter().all(|&x| x == 0) {
-            self.state.codes.insert(account_state_ex.code_hash.clone().unwrap(),
-                                    _hex_string_to_bytes(account_state_ex.code.clone().unwrap().as_str()));
+            self.state.codes.insert(
+                account_state_ex.code_hash.clone().unwrap(),
+                _hex_string_to_bytes(account_state_ex.code.clone().unwrap().as_str()),
+            );
         }
     }
-
 
     pub fn interpret(
         &mut self,
@@ -259,17 +258,12 @@ impl Runner {
         // Interpret the bytecode
         while self.pc < self.bytecode.len() {
             let mut op_count = self.op_count;
-            let mut add_one_flag = false;
-            let mut add_two_flag = false;
-
-            if self.call_depth == 1 && !add_one_flag {
-                op_count += 1;
-                add_one_flag = true;
-            }
-
-            if self.call_depth == 2 && !add_two_flag {
-                op_count += 2;
-                add_two_flag = true;
+            let mut flag = [0u8; 30];
+            for i in 1..30 {
+                if self.call_depth.eq(&i) && flag[i as usize] == 0 {
+                    flag[i as usize] = 1;
+                    op_count += i as u128;
+                }
             }
 
             // Interpret an opcode
@@ -277,8 +271,8 @@ impl Runner {
 
             let my_opcode = get_op_code(self.bytecode[self.pc]).to_string();
 
-            // if op_count.eq(&4774)
-            //     // && self.call_depth == 2
+            // if op_count.eq(&8353)
+            // // //     && self.call_depth == 2
             // {
             // if !self.pc.eq(&(read_op_tracer().structLogs[cnt].pc as usize)) {
             // if self.call_depth == read_op_tracer().structLogs[self.op_count as usize].depth && !my_opcode.eq(&read_op_tracer().structLogs[self.op_count as usize].op) {
@@ -321,12 +315,10 @@ impl Runner {
                 // // self.debug_storage();
                 // break;
 
-
                 error = Some(result.unwrap_err());
                 break;
             }
             self.op_count += 1;
-
         }
 
         /* -------------------------------------------------------------------------- */
@@ -399,6 +391,7 @@ impl Runner {
             0x08 => op_codes::arithmetic::unsigned::addmod(self),
             0x09 => op_codes::arithmetic::unsigned::mulmod(self),
             0x0a => op_codes::arithmetic::unsigned::exp(self),
+            0x0b => op_codes::bitwise::signextend(self),
             0x05 => op_codes::arithmetic::signed::sdiv(self),
             0x07 => op_codes::arithmetic::signed::smodulo(self),
 
@@ -593,13 +586,6 @@ impl Runner {
         let initial_pc = self.pc.clone();
         let initial_bytecode = self.bytecode.clone();
 
-        // Transfer the value
-        if !value.eq(&[0u8; 32]) && !self.state.static_mode{
-            self
-                .state
-                .transfer(self.address, self.caller, value)?;
-        }
-
         // Update runner state
         if !delegate {
             self.caller = self.address.clone();
@@ -656,8 +642,6 @@ impl Runner {
         // Return Ok
         Ok(())
     }
-
-
 
     fn debug_stack(&self) {
         let border_line =
@@ -728,7 +712,6 @@ impl Runner {
     fn debug_storage(&mut self) {
         self.state.debug_state();
     }
-
 }
 
 #[cfg(test)]

@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 use crate::core_module::memory::Memory;
 use crate::core_module::stack::Stack;
 use crate::core_module::state::EvmState;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct AccountStateEx {
-
     /// The account's nonce, which is incremented each time a transaction is sent from the account.
     pub nonce: u64,
 
@@ -20,12 +19,11 @@ pub struct AccountStateEx {
 
     pub code: Option<String>,
 
-    pub state_tracer_type: crate::core_module::test_tx::StateTracerType
+    pub state_tracer_type: crate::core_module::test_tx::StateTracerType,
 }
 
 #[derive(Debug)]
 pub struct OpCodeContext<'a> {
-
     pub pc: u64,
 
     pub op_code: &'a str,

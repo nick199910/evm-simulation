@@ -6,9 +6,9 @@ use crate::core_module::utils::errors::ExecutionError;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Primitive types
+use crate::core_module::env::EvmContext;
 use ethers::types::U256;
 use ethers::utils::keccak256;
-use crate::core_module::env::EvmContext;
 
 pub fn address(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = pad_left(&runner.address);
@@ -173,9 +173,7 @@ pub fn codecopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 
 pub fn gasprice(runner: &mut Runner) -> Result<(), ExecutionError> {
     let gasprice = match &runner.evm_context {
-        None => {
-            pad_left(&[0xff])
-        }
+        None => pad_left(&[0xff]),
         Some(evm_context) => {
             if let Some(gas_price) = evm_context.gas_price {
                 gas_price
@@ -279,17 +277,18 @@ pub fn returndatacopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 pub fn extcodehash(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = runner.stack.pop()?;
 
-    Ok(if let Some(code) = runner.state.get_code_at(bytes32_to_address(&address)) {
-        let codehash = keccak256(code);
-        let result = runner.stack.push(codehash);
-        if result.is_err() {
-            return Err(result.unwrap_err());
-        }
+    Ok(
+        if let Some(code) = runner.state.get_code_at(bytes32_to_address(&address)) {
+            let codehash = keccak256(code);
+            let result = runner.stack.push(codehash);
+            if result.is_err() {
+                return Err(result.unwrap_err());
+            }
 
-        // Increment PC
-        runner.increment_pc(1);
-    })
-
+            // Increment PC
+            runner.increment_pc(1);
+        },
+    )
 }
 
 pub fn blockhash(runner: &mut Runner) -> Result<(), ExecutionError> {
@@ -313,9 +312,7 @@ pub fn coinbase(runner: &mut Runner) -> Result<(), ExecutionError> {
     // let coinbase = pad_left(&[0xc0u8; 20]);
 
     let coinbase = match &runner.evm_context {
-        None => {
-            pad_left(&[0xc0u8; 20])
-        }
+        None => pad_left(&[0xc0u8; 20]),
         Some(evm_context) => {
             if let Some(coinbase) = evm_context.coinbase {
                 pad_left(&coinbase)
@@ -337,12 +334,9 @@ pub fn coinbase(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn timestamp(runner: &mut Runner) -> Result<(), ExecutionError> {
-
     // Convert the timestamp to seconds
     let timestamp_secs = match &runner.evm_context {
-        None => {
-            pad_left(&[0x00; 20])
-        }
+        None => pad_left(&[0x00; 20]),
         Some(evm_context) => {
             if let Some(timestamp_secs) = evm_context.timestamp {
                 timestamp_secs
@@ -362,11 +356,8 @@ pub fn timestamp(runner: &mut Runner) -> Result<(), ExecutionError> {
     runner.increment_pc(1)
 }
 pub fn number(runner: &mut Runner) -> Result<(), ExecutionError> {
-
     let number = match &runner.evm_context {
-        None => {
-            pad_left(&[0xff; 4])
-        }
+        None => pad_left(&[0xff; 4]),
         Some(evm_context) => {
             if let Some(number) = evm_context.block_number {
                 number
@@ -401,11 +392,8 @@ pub fn difficulty(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn gaslimit(runner: &mut Runner) -> Result<(), ExecutionError> {
-
     let gaslimit = match &runner.evm_context {
-        None => {
-            pad_left(&[0x01, 0xC9, 0xC3, 0x80])
-        }
+        None => pad_left(&[0x01, 0xC9, 0xC3, 0x80]),
         Some(evm_context) => {
             if let Some(gaslimit) = evm_context.gas_limit {
                 gaslimit
@@ -452,11 +440,8 @@ pub fn selfbalance(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn basefee(runner: &mut Runner) -> Result<(), ExecutionError> {
-
     let basefee = match &runner.evm_context {
-        None => {
-            pad_left(&[0x0a])
-        }
+        None => pad_left(&[0x0a]),
         Some(evm_context) => {
             if let Some(basefee) = evm_context.basefee {
                 basefee

@@ -1222,6 +1222,7 @@ name = "evm-rs-emulator"
 version = "0.1.4"
 dependencies = [
  "alloy-primitives",
+ "alloy-rlp",
  "colored",
  "ethers",
  "hex",

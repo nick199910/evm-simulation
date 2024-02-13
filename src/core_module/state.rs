@@ -360,10 +360,8 @@ impl EvmState {
         }
     }
 
-
     fn get_code(&self, code_hash: [u8; 32]) -> Option<&Vec<u8>> {
-        self.codes
-            .get(&code_hash).to_owned()
+        self.codes.get(&code_hash).to_owned()
     }
 
     /// Store contract code and return its hash
@@ -377,7 +375,6 @@ impl EvmState {
         self.codes.insert(code_hash, code);
         Ok(code_hash)
     }
-
 
     /// Print the state of the EVM
     /// This function is used for debugging purposes.

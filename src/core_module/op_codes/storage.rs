@@ -38,10 +38,8 @@ mod tests {
     #[test]
     fn test_sload() {
         let mut runner = Runner::_default(3);
-        let interpret_result: Result<(), ExecutionError> = runner.interpret(
-            _hex_string_to_bytes("602e600055600054600154"),
-            true,
-        );
+        let interpret_result: Result<(), ExecutionError> =
+            runner.interpret(_hex_string_to_bytes("602e600055600054600154"), true);
         assert!(interpret_result.is_ok());
 
         let result: [u8; 32] = runner.stack.pop().unwrap();
