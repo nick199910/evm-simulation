@@ -7,8 +7,11 @@ use crate::core_module::utils::environment::{
 use crate::core_module::utils::errors::ExecutionError;
 
 // Primitive types
-use ethers::types::U256;
+use ethers::types::{U256};
+
 use ethers::utils::keccak256;
+use revm_primitives::Address;
+use crate::core_module::utils;
 
 pub fn invalid(runner: &mut Runner) -> Result<(), ExecutionError> {
     Err(ExecutionError::InvalidOpcode(runner.bytecode[runner.pc]))
@@ -23,42 +26,40 @@ pub fn create(runner: &mut Runner) -> Result<(), ExecutionError> {
     // Load the init code from memory
     let init_code = unsafe { runner.memory.read(offset.as_usize(), size.as_usize())? };
 
-    let caller = &runner.caller;
-
-    // Compute the contract address, 计算出的合约地址不同是否会影响接下来的逻辑
-    let mut input = vec![0xd6, 0x94];
-    input.extend_from_slice(caller);
-    input.extend_from_slice(&bytes::strip_zero_padding(&get_nonce(
+    // 使用Address的官方地址计算
+    let nonce = get_nonce(
         runner.address,
         runner,
-    )?));
-    let hash = keccak256(input);
-    let contract_address: [u8; 20] = hash[12..].try_into().unwrap();
-    println!("contract_address: {:?}", contract_address);
+    )?;
+    let nonce = U256::from_big_endian(&nonce).0[0];
+    let caller = &runner.caller;
+    let create_address = Address::from_slice(caller).create(nonce);
+
+    // println!("contract_address: {:?}", &create_address);
 
     // Create the contract with init code as code
-    init_account(contract_address, runner)?;
-    runner.state.put_code_at(contract_address, init_code)?;
+    init_account(*create_address.0, runner)?;
+    runner.state.put_code_at(*create_address.0, init_code)?;
 
-    let call_result = runner.call(contract_address, value, Vec::new(), runner.gas, false);
+    let call_result = runner.call(*create_address.0, value, Vec::new(), runner.gas, false);
 
     // Check if the call failed
     if call_result.is_err() {
         runner.stack.push(pad_left(&[0x00]))?;
     } else {
-        runner.stack.push(pad_left(&contract_address))?;
+        runner.stack.push(pad_left(&*create_address.0))?;
     }
 
     // Get the return data to store the real contract code
     let returndata = runner.returndata.heap.clone();
     runner
         .state
-        .put_code_at(contract_address, returndata.clone())?;
+        .put_code_at(*create_address.0, returndata.clone())?;
 
     // Transfer the value
     runner
         .state
-        .transfer(runner.caller, contract_address, value)?;
+        .transfer(runner.caller, *create_address.0, value)?;
 
     // Increment PC
     runner.increment_pc(1)
@@ -77,36 +78,33 @@ pub fn create2(runner: &mut Runner) -> Result<(), ExecutionError> {
     // Compute the contract address
     let init_code_hash = keccak256(init_code.clone());
 
-    let mut input = vec![0xff];
-    input.extend_from_slice(&runner.caller);
-    input.extend_from_slice(&salt);
-    input.extend_from_slice(&init_code_hash);
 
-    let hash = keccak256(input);
-    let contract_address: [u8; 20] = hash[12..].try_into().unwrap();
+    let caller = &runner.caller;
+    let create_address = Address::from_slice(caller).create2(salt, init_code_hash);
+
 
     // Create the contract with init code as code
-    init_account(contract_address, runner)?;
-    runner.state.put_code_at(contract_address, init_code)?;
+    init_account(*create_address.0, runner)?;
+    runner.state.put_code_at(*create_address.0, init_code)?;
 
     // Call the contract to run its constructor
-    let call_result = runner.call(contract_address, value, Vec::new(), runner.gas, false);
+    let call_result = runner.call(*create_address.0, value, Vec::new(), runner.gas, false);
 
     // Check if the call failed
     if call_result.is_err() {
         runner.stack.push(pad_left(&[0x00]))?;
     } else {
-        runner.stack.push(pad_left(&contract_address))?;
+        runner.stack.push(pad_left(&(*create_address.0)))?;
     }
 
     // Get the return data to store the real contract code
     let returndata = runner.returndata.heap.clone();
-    runner.state.put_code_at(contract_address, returndata)?;
+    runner.state.put_code_at(*create_address.0, returndata)?;
 
     // Transfer the value
     runner
         .state
-        .transfer(runner.caller, contract_address, value)?;
+        .transfer(runner.caller, *create_address.0, value)?;
 
     // Increment PC
     runner.increment_pc(1)
