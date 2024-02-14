@@ -6,7 +6,7 @@ use crate::core_module::utils::errors::ExecutionError;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Primitive types
-use crate::core_module::env::EvmContext;
+use crate::core_module::context::account_state_ex_context;
 use ethers::types::U256;
 use ethers::utils::keccak256;
 

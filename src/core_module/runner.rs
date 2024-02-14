@@ -1,4 +1,4 @@
-use crate::core_module::utils::bytes::{_hex_string_to_bytes, get_op_code, pad_left};
+use crate::core_module::utils::bytes::{_hex_string_to_bytes};
 use std::collections::HashMap;
 
 use super::memory::Memory;
@@ -9,13 +9,12 @@ use super::utils;
 use super::utils::environment::{increment_nonce, init_account};
 use super::utils::errors::ExecutionError;
 
-use super::other_test::read_op_tracer;
-use ethers::types::U256;
-
 // Colored output
-use crate::core_module::env::EvmContext;
-use crate::core_module::test_account::AccountStateEx;
+
 use colored::*;
+use crate::core_module::context::account_state_ex_context::AccountStateEx;
+use crate::core_module::context::evm_context::EvmContext;
+use crate::core_module::utils::assembly::get_op_code;
 
 pub struct Runner {
     // Execution

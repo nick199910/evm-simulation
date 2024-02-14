@@ -1,8 +1,6 @@
-use super::memory::Memory;
-use crate::core_module::env::EvmContext;
+use crate::core_module::memory::Memory;
 use crate::core_module::runner::Runner;
 use crate::core_module::state::EvmState;
-use crate::core_module::test_account::AccountStateEx;
 use crate::core_module::utils::bytes::{pad_left, to_h256};
 use alloy_primitives::B256;
 use ethers::addressbook::Address;
@@ -22,47 +20,10 @@ use std::mem::transmute;
 use std::process;
 use std::str::FromStr;
 use std::sync::Arc;
+use crate::core_module::context::account_state_ex_context::AccountStateEx;
+use crate::core_module::context::evm_context::EvmContext;
+use crate::core_module::context::transaction_context::{StateTracerType, TransactionEnv};
 
-#[derive(Debug, Clone)]
-pub struct TransactionEnv {
-    /// The transaction's hash
-    pub tx_hash: H256,
-
-    /// The transaction's nonce
-    pub nonce: [u8; 32],
-
-    /// Block hash. None when pending.
-    pub block_hash: Option<[u8; 32]>,
-
-    pub block_number: Option<[u8; 32]>,
-
-    pub coinbase: Option<[u8; 20]>,
-
-    pub timestamp: Option<[u8; 32]>,
-
-    pub from: [u8; 20],
-
-    pub to: Option<[u8; 20]>,
-
-    /// Transferred value
-    pub value: [u8; 32],
-
-    pub gas_price: Option<[u8; 32]>,
-
-    /// Gas amount
-    pub gas: [u8; 32],
-
-    /// Input data
-    pub calldata: Memory,
-
-    pub basefee: Option<[u8; 32]>,
-
-    pub difficulty: Option<[u8; 32]>,
-
-    pub prevrandao: Option<B256>,
-
-    pub chain_id: Option<U256>,
-}
 
 async fn get_transaction_content(
     provider: Provider<Http>,
@@ -165,13 +126,7 @@ async fn get_transaction_content(
     })
 }
 
-#[derive(Debug, Clone)]
-pub(crate) enum StateTracerType {
-    None,
-    TurnOffDiff,
-    TurnOnDiffPre,
-    TurnOnDiffPost,
-}
+
 
 fn get_test_account_msg() -> AccountStateEx {
     let code = "0x608060405234801561000f575f80fd5b506004361061003f575f3560e01c80633fb5c1cb14610043578063893d20e81461005f578063a6f9dae114610069575b5f80fd5b61005d6004803603810190610058919061011e565b610085565b005b61006761009a565b005b610083600480360381019061007e91906101a3565b6100a5565b005b600c8110156100975760056001819055505b50565b6100a3336100a5565b565b805f806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b5f80fd5b5f819050919050565b6100fd816100eb565b8114610107575f80fd5b50565b5f81359050610118816100f4565b92915050565b5f60208284031215610133576101326100e7565b5b5f6101408482850161010a565b91505092915050565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f61017282610149565b9050919050565b61018281610168565b811461018c575f80fd5b50565b5f8135905061019d81610179565b92915050565b5f602082840312156101b8576101b76100e7565b5b5f6101c58482850161018f565b9150509291505056fea26469706673582212205583d88608fb17547ba77bd69a991b8647738b63e2a17f2d3a0c5dfd1fa118a364736f6c63430008160033";

@@ -1,4 +1,5 @@
 mod core_module;
+mod example;
 
 /* ---------------------------------- Core ---------------------------------- */
 pub use core_module::memory::Memory;
@@ -12,3 +13,5 @@ pub use core_module::utils::bytes;
 pub use core_module::utils::debug;
 pub use core_module::utils::environment;
 pub use core_module::utils::errors;
+
+
