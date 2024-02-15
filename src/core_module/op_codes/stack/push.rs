@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn test_push() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
         let _ = runner.interpret(vec![0x60, 0xff], true);
 
         assert_eq!(runner.stack.stack.len(), 1);

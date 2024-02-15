@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_mload() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> = runner.interpret(_hex_string_to_bytes("7f00000000000000000000000000000000000000000000000000000000000000ff600052600051600151"), true);
         assert!(interpret_result.is_ok());
 
@@ -63,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_mstore() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
             _hex_string_to_bytes(
                 "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff600052",
@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn test_msize() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("5960005150596039515059"), true);
         assert!(interpret_result.is_ok());

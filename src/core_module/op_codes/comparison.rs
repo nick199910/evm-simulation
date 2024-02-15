@@ -134,7 +134,7 @@ mod tests {
     use crate::core_module::utils::bytes::pad_left;
     #[test]
     fn iszero_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x00]));
 
         iszero(&mut runner).unwrap();
@@ -145,7 +145,7 @@ mod tests {
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
 
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x01]));
 
         iszero(&mut runner).unwrap();
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn eq_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x04]));
         let _ = runner.stack.push(pad_left(&[0x04]));
 
@@ -171,7 +171,7 @@ mod tests {
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
 
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x04]));
         let _ = runner.stack.push(pad_left(&[0x05]));
 
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn lt_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x08]));
         let _ = runner.stack.push(pad_left(&[0x04]));
 
@@ -197,7 +197,7 @@ mod tests {
 
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         let _ = runner.stack.push(pad_left(&[0x04]));
         let _ = runner.stack.push(pad_left(&[0x08]));
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn gt_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x04]));
         let _ = runner.stack.push(pad_left(&[0x08]));
 
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
 
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x08]));
         let _ = runner.stack.push(pad_left(&[0x04]));
 
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn slt_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x09]));
         let _ = runner.stack.push([
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -256,7 +256,7 @@ mod tests {
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
 
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push([
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn sgt_test() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&[0x09]));
         let _ = runner.stack.push([
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -291,7 +291,7 @@ mod tests {
         assert_eq!(result, expected_result);
         assert_eq!(runner.stack.stack.len(), 0);
 
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push([
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
             0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

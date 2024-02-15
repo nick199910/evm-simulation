@@ -1,5 +1,6 @@
 use crate::core_module::utils::bytes::{_hex_string_to_bytes};
 use std::collections::HashMap;
+use ethers::types::U256;
 
 use super::memory::Memory;
 use super::op_codes;
@@ -115,12 +116,7 @@ impl Runner {
             op_count: 0,
         };
 
-        // // ============================= 删除其所有的初始化工作
-        // // Initialize accounts in the EVM state
-        // let _ = init_account(instance.address, &mut instance);
-        // let _ = init_account(instance.caller, &mut instance);
-        // let _ = init_account(instance.origin, &mut instance);
-        //
+
         // // Set caller balance to 1000
         // let mut result_bytes = [0u8; 32];
         // U256::from("3635C9ADC5DEA00000").to_big_endian(&mut result_bytes);
@@ -144,21 +140,40 @@ impl Runner {
     /// # Returns
     ///
     /// A new `Runner` instance with default values and the debug level set to the given value.
-    pub fn _default(debug_level: u8) -> Self {
+    pub fn _default() -> Self {
+
+        let caller = [0xaa; 20];
+        let origin = [0xaa; 20];
+        let address = [0xab; 20];
+        let callvalue = [0x00;32];
+        let calldata = None;
+        let state= None;
+        let evm_context = None;
+
         let mut runner = Self::new(
-            [
-                0xbe, 0x86, 0x2a, 0xd9, 0xab, 0xfe, 0x6f, 0x22, 0xbc, 0xb0, 0x87, 0x71, 0x6c, 0x7d,
-                0x89, 0xa2, 0x60, 0x51, 0xf7, 0x4c,
-            ],
-            None,
-            Some([0xab; 20]),
-            None,
-            None,
-            Some(EvmState::new(Some(String::from(
-                "https://eth.llamarpc.com",
-            )))),
-            None,
+            caller.clone(),
+            Some(origin),
+            Some(address.clone()),
+            Some(callvalue),
+            calldata,
+            state,
+            evm_context,
         );
+
+        // Initialize accounts in the EVM state
+        let _ = init_account(caller, &mut runner);
+        let _ = init_account(address, &mut runner);
+
+        // Set caller balance to 1000 ether
+        let mut caller_balance = [0u8; 32];
+        U256::from("3635C9ADC5DEA00000").to_big_endian(&mut caller_balance);
+        runner
+            .state
+            .accounts
+            .get_mut(&runner.caller)
+            .unwrap()
+            .balance = caller_balance;
+
         runner
     }
 
@@ -232,6 +247,7 @@ impl Runner {
         // Set the bytecode
         self.bytecode = bytecode;
 
+
         if initial_interpretation {
             // Set the runner address code
             let put_code_result = self.state.put_code_at(self.address, self.bytecode.clone());
@@ -289,7 +305,6 @@ impl Runner {
             // }
 
             let result = self.interpret_op_code(self.bytecode[self.pc]);
-
             // Check if the interpretation was successful
             if result.is_err() {
                 // Store the execution error
@@ -719,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_push0() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
         let _ = runner.interpret(vec![0x5f, 0x5f, 0x5f], true);
 
         assert_eq!(runner.stack.pop().unwrap(), [0u8; 32]);
@@ -729,7 +744,7 @@ mod tests {
 
     #[test]
     fn test_push1() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
         let _ = runner.interpret(vec![0x60, 0x01, 0x60, 0x02, 0x60, 0x03], true);
 
         assert_eq!(

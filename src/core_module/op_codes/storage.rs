@@ -37,7 +37,7 @@ mod tests {
 
     #[test]
     fn test_sload() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("602e600055600054600154"), true);
         assert!(interpret_result.is_ok());
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn test_sstore() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("602e600055"), true);
         assert!(interpret_result.is_ok());

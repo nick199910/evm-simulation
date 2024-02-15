@@ -165,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_log0() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("604260005260206000a0"), true);
         assert!(interpret_result.is_ok());
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_log1() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("604260005260ff60206000a1"), true);
         assert!(interpret_result.is_ok());
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn test_log2() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("6042600052606060ff60206000a2"), true);
         assert!(interpret_result.is_ok());
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_log3() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
             _hex_string_to_bytes("604260005260ac606060ff60206000a3"),
             true,
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_log4() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
             _hex_string_to_bytes("6042600052601d60ac606060ff60206000a4"),
             true,

@@ -468,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_address() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         address(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -477,7 +477,7 @@ mod tests {
 
     #[test]
     fn test_balance() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let _ = runner.stack.push(pad_left(&runner.caller));
         balance(&mut runner).unwrap();
 
@@ -487,7 +487,7 @@ mod tests {
             pad_left(&[0x36, 0x35, 0xC9, 0xAD, 0xC5, 0xDE, 0xA0, 0x00, 0x00])
         );
 
-        // transfer 100 wei to the contract
+        // transfer 1 wei to the contract
         let _ = runner
             .state
             .transfer(runner.caller, runner.address, pad_left(&[0x01]));
@@ -504,7 +504,7 @@ mod tests {
 
     #[test]
     fn test_origin() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         origin(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -513,7 +513,7 @@ mod tests {
 
     #[test]
     fn test_caller() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         caller(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -522,7 +522,7 @@ mod tests {
 
     #[test]
     fn test_callvalue() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         callvalue(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -531,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_calldataload() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         runner.calldata.heap = vec![0xff, 0xff, 0xff, 0xff];
 
         let _ = runner.stack.push(pad_left(&[0x00]));
@@ -549,7 +549,7 @@ mod tests {
 
     #[test]
     fn test_calldatasize() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         runner.calldata.heap = vec![0xff, 0xff, 0xff, 0xff];
 
         calldatasize(&mut runner).unwrap();
@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_calldatacopy() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         runner.calldata.heap = [0xff; 32].to_vec();
 
         let _ = runner.stack.push(pad_left(&[0x20]));
@@ -591,7 +591,7 @@ mod tests {
 
     #[test]
     fn test_codesize() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Interpret some code to make set the runner code to something
         runner
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn test_codecopy() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract with a bytecode length of 23
         let interpret_result = runner.interpret(
@@ -644,7 +644,7 @@ mod tests {
 
     #[test]
     fn test_gasprice() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         gasprice(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn test_extcodesize() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract with a bytecode length of 23
         let interpret_result = runner.interpret(
@@ -670,7 +670,7 @@ mod tests {
 
     #[test]
     fn test_extcodecopy() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract with a bytecode length of 23
         let interpret_result = runner.interpret(
@@ -716,7 +716,7 @@ mod tests {
 
     #[test]
     fn test_returndatasize() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract that return 0x20 sized data and call it
         let interpret_result = runner.interpret(
@@ -731,7 +731,7 @@ mod tests {
 
     #[test]
     fn test_returndatacopy() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract that return 0x20 sized data and call it
         let interpret_result = runner.interpret(
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn test_extcodehash() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract with a bytecode length of 23
         let interpret_result = runner.interpret(
@@ -775,7 +775,7 @@ mod tests {
 
     #[test]
     fn test_coinbase() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         coinbase(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -784,7 +784,7 @@ mod tests {
 
     #[test]
     fn test_timestamp() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         timestamp(&mut runner).unwrap();
 
         // Get the current timestamp
@@ -804,7 +804,7 @@ mod tests {
     #[test]
     fn test_number() {
         // TODO: test with a fork
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         number(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -814,7 +814,7 @@ mod tests {
     #[test]
     fn test_difficulty() {
         // TODO: test with a fork
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         difficulty(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -823,7 +823,7 @@ mod tests {
 
     #[test]
     fn test_gaslimit() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         gaslimit(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -832,7 +832,7 @@ mod tests {
 
     #[test]
     fn test_chainid() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         chainid(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -841,7 +841,7 @@ mod tests {
 
     #[test]
     fn test_selfbalance() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         selfbalance(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();
@@ -859,7 +859,7 @@ mod tests {
 
     #[test]
     fn test_basefee() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         basefee(&mut runner).unwrap();
 
         let result = runner.stack.pop().unwrap();

@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn test_dup1() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(vec![0x60, 0xff, 0x80], true);
         assert_eq!(runner.stack.stack.len(), 2);
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_dup2() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(vec![0x60, 0xff, 0x60, 0x01, 0x81], true);
         assert_eq!(runner.stack.stack.len(), 3);
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_dup3() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(vec![0x60, 0xff, 0x60, 0x01, 0x60, 0x01, 0x82], true);
         assert_eq!(runner.stack.stack.len(), 4);
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn test_dup4() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![0x60, 0xff, 0x60, 0x01, 0x60, 0x01, 0x60, 0x01, 0x83],
@@ -227,7 +227,7 @@ mod tests {
 
     #[test]
     fn test_dup5() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_dup6() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn test_dup7() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_dup8() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -285,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_dup9() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_dup10() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_dup11() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -330,7 +330,7 @@ mod tests {
 
     #[test]
     fn test_dup12() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn test_dup13() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_dup14() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_dup15() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![
@@ -392,7 +392,7 @@ mod tests {
 
     #[test]
     fn test_dup16() {
-        let mut runner = Runner::new([0xaa; 20], None, None, None, None, None, None);
+        let mut runner = Runner::_default();
 
         let _ = runner.interpret(
             vec![

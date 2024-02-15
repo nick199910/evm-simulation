@@ -288,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_invalid() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> =
             runner.interpret(_hex_string_to_bytes("60fffe50fe60fffe"), true);
         assert!(interpret_result.is_err());
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let caller = runner.caller;
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
             _hex_string_to_bytes("6c63ffffffff6000526004601cf3600052600d601360fff0"),
@@ -328,7 +328,7 @@ mod tests {
 
     #[test]
     fn test_create2() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
             _hex_string_to_bytes("6c63ffffffff6000526004601cf360005263aaa4aaaf600d601360aff5"),
             true,
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     fn test_call() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         // Create a contract that creates an exception if first word of calldata is 0.
         // Call it two time with no calldata and with calldata.
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_callcode() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         // Create a contract that creates an exception if first word of calldata is 0.
         // Call it two time with no calldata and with calldata.
         let interpret_result: Result<(), ExecutionError> =
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_delegatecall() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         // Create a contract that creates an exception if first slot of storage is 0
         // Call it two time with no calldata and with calldata.
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_staticcall() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
         // Create a contract that creates an exception if first word of calldata is 0.
         // Call it two time with storage to 0 and storage to 1 (in the caller contract).
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn test_selfdestruct() {
-        let mut runner = Runner::_default(3);
+        let mut runner = Runner::_default();
 
         // Create a contract that has ff as code
         let interpret_result: Result<(), ExecutionError> = runner.interpret(
