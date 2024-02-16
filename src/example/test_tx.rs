@@ -16,7 +16,6 @@ use primitive_types::{H256, U256};
 pub use serde::Deserialize;
 pub use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
-use std::mem::transmute;
 use std::process;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -128,64 +127,6 @@ async fn get_transaction_content(
 
 
 
-fn get_test_account_msg() -> AccountStateEx {
-    let code = "0x608060405234801561000f575f80fd5b506004361061003f575f3560e01c80633fb5c1cb14610043578063893d20e81461005f578063a6f9dae114610069575b5f80fd5b61005d6004803603810190610058919061011e565b610085565b005b61006761009a565b005b610083600480360381019061007e91906101a3565b6100a5565b005b600c8110156100975760056001819055505b50565b6100a3336100a5565b565b805f806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b5f80fd5b5f819050919050565b6100fd816100eb565b8114610107575f80fd5b50565b5f81359050610118816100f4565b92915050565b5f60208284031215610133576101326100e7565b5b5f6101408482850161010a565b91505092915050565b5f73ffffffffffffffffffffffffffffffffffffffff82169050919050565b5f61017282610149565b9050919050565b61018281610168565b811461018c575f80fd5b50565b5f8135905061019d81610179565b92915050565b5f602082840312156101b8576101b76100e7565b5b5f6101c58482850161018f565b9150509291505056fea26469706673582212205583d88608fb17547ba77bd69a991b8647738b63e2a17f2d3a0c5dfd1fa118a364736f6c63430008160033";
-    AccountStateEx {
-        nonce: 1,
-        balance: pad_left(&[0x00]),
-        storage: Default::default(),
-        code_hash: Some(keccak256(code)),
-        code: Some(code.to_string()),
-        state_tracer_type: StateTracerType::None,
-    }
-}
-
-// #[tokio::test]
-async fn test_no_state_run() -> Result<(), ProviderError> {
-    let sepolia_rpc = "https://rough-frosty-field.ethereum-sepolia.quiknode.pro/40fa9bf59d6007a200145efb93862af9a528e8ae/";
-
-    let set_five_hash = "0xceb77591c14a3a8458741a0a1e205e56d319f970c6ef497a41917df464401561";
-    let set_six_hash = "0x55e59ddfb18232d0e23e5b9675900ea3e614490c5e801fa75a3cf572ebf70ca2";
-
-    let provider = Provider::try_connect(sepolia_rpc)
-        .await
-        .expect("rpc connect error");
-
-    let transaction_content =
-        get_transaction_content(provider, TxHash::from_str(set_six_hash).unwrap())
-            .await
-            .expect("get transaction hash error");
-    let test_account_msg = get_test_account_msg();
-
-    let mut caller = transaction_content.clone().from;
-    let mut origin: Option<[u8; 20]> = None;
-    let mut address: Option<[u8; 20]> = Some(transaction_content.to.unwrap());
-    let mut value: Option<[u8; 32]> = Some(transaction_content.value);
-    let mut data: Option<Vec<u8>> = Some(transaction_content.calldata.heap);
-    let mut bytecode: String = test_account_msg.code.unwrap();
-
-    let state: EvmState;
-
-    state = EvmState::new(None);
-
-    // Create a new interpreter
-    let mut interpreter = Runner::new(caller, origin, address, value, data, Some(state), None);
-
-    // interpreter.state.accounts.insert()
-
-    // Check if bytecode is an hex value of a file path
-    if bytecode.starts_with("0x") {
-        let bytecode = hex::decode(&bytecode[2..]).expect("Invalid bytecode");
-
-        // Interpret the bytecode
-        let ret = interpreter.interpret(bytecode, true);
-        if ret.is_ok() {
-            println!("successful!!!!")
-        }
-    }
-    Ok(())
-}
-
 #[tokio::test]
 async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
     let provider_http_url = "https://lb.nodies.app/v1/181a5ebf4c954f8496ae7cbc1ac8d03b";
@@ -270,6 +211,7 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
 
     Ok(())
 }
+
 
 async fn get_accounts_state_pre_tx(
     provider: Arc<Provider<Http>>,

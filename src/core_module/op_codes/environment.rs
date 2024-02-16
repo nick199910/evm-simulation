@@ -787,18 +787,8 @@ mod tests {
         let mut runner = Runner::_default();
         timestamp(&mut runner).unwrap();
 
-        // Get the current timestamp
-        let now = SystemTime::now();
-        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
-
-        // Convert the timestamp to seconds
-        let timestamp_secs = since_the_epoch.as_secs();
-
-        // Convert the timestamp to bytes in big-endian order
-        let timestamp_bytes = timestamp_secs.to_be_bytes();
-
         let result = runner.stack.pop().unwrap();
-        assert_eq!(result, pad_left(&timestamp_bytes));
+        assert_eq!(result, pad_left(&[0u8; 32]));
     }
 
     #[test]

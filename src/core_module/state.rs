@@ -324,7 +324,7 @@ impl EvmState {
         }
     }
 
-    /// Returns the code at the given address. If the code is not already in the state, it will be fetched from the blockchain using the provider.
+    /// Returns the code at the given address.
     ///
     /// # Arguments
     ///

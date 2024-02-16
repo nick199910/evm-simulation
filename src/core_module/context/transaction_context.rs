@@ -47,7 +47,7 @@ pub struct TransactionEnv {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) enum StateTracerType {
+pub enum StateTracerType {
     None,
     TurnOffDiff,
     TurnOnDiffPre,

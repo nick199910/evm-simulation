@@ -7,20 +7,19 @@ use std::{env, fs};
 use colored::*;
 
 fn main() -> Result<(), ExecutionError> {
-    let mut caller = [
+    let caller = [
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0xc4, 0x11, 0xe8,
     ];
-    let mut origin: Option<[u8; 20]> = None;
-    let mut address: Option<[u8; 20]> = Some([
+    let origin: Option<[u8; 20]> = None;
+    let address: Option<[u8; 20]> = Some([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0xc4, 0x11, 0xee,
     ]);
-    let mut value: Option<[u8; 32]> = None;
-    let mut data: Option<Vec<u8>> = None;
+    let value: Option<[u8; 32]> = None;
+    let data: Option<Vec<u8>> = None;
     let mut bytecode: String = Default::default();
     let state: EvmState;
-    let mut debug_level: Option<u8> = Some(255);
 
     state = EvmState::new(None);
 

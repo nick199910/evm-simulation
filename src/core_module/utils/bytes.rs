@@ -96,15 +96,6 @@ pub fn u64_x4_array_to_u8_x32_array(arr: U256) -> [u8; 32] {
     arr_u8
 }
 
-/// Convert a [u8; 32] to a u64
-///
-/// # Arguments
-///
-/// * `arr` - The [u8; 32] to convert
-///
-/// # Returns
-///
-/// Returns a u64 with the [u8; 32] converted to a u64
 pub fn _hex_string_to_bytes(hex: &str) -> Vec<u8> {
     let mut after_hex = hex;
     if hex.starts_with("0x") {
