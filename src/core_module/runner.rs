@@ -11,7 +11,6 @@ use super::utils::environment::{increment_nonce, init_account};
 use super::utils::errors::ExecutionError;
 
 // Colored output
-
 use colored::*;
 use crate::core_module::context::account_state_ex_context::AccountStateEx;
 use crate::core_module::context::evm_context::EvmContext;

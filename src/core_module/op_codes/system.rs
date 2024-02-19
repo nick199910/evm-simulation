@@ -109,6 +109,8 @@ pub fn create2(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn call(runner: &mut Runner, bypass_static: bool) -> Result<(), ExecutionError> {
+    // hook_function
+
     // Check if static mode is enabled
     if runner.state.static_mode && !bypass_static {
         return Err(ExecutionError::StaticCallStateChanged);
@@ -422,7 +424,6 @@ mod tests {
 
         let address = runner.stack.pop().unwrap();
 
-
         let stored_code = runner.state.get_code_at(bytes32_to_address(&address));
 
         assert_eq!(stored_code.unwrap(), &_hex_string_to_bytes("ff"));
@@ -448,8 +449,8 @@ mod tests {
         let bytecode: &str = &bytecode;
 
         runner.pc = 0;
-        // Self destruct the contract by calling it
 
+        // Self destruct the contract by calling it
         let addr = runner.address;
 
         let selfdestruct_result: Result<(), ExecutionError> =

@@ -160,6 +160,7 @@ pub fn sha3(runner: &mut Runner) -> Result<(), ExecutionError> {
 
 // x (b+1) * 8 -> x 256
 pub fn signextend(runner: &mut Runner) -> Result<(), ExecutionError> {
+
     let pop1 = runner.stack.pop()?;
     let pop2 = runner.stack.pop()?;
 

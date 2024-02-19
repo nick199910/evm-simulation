@@ -1,10 +1,10 @@
 target
-.vscode
-.idea
+/.vscode
+/.idea
 \tracer_data
 /tracer_data
 ./tracer_data/euler_attack_tx_op_logs.json
 ./tracer_data/uniswap_v2_attack_tx_op_logs.json
-.DS_Store
+/.DS_Store
 
 
