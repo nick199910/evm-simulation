@@ -19,6 +19,7 @@ pub fn invalid(runner: &mut Runner) -> Result<(), ExecutionError> {
 
 pub fn create(runner: &mut Runner) -> Result<(), ExecutionError> {
     // Get the values on the stack
+    // caller, nonce
     let value = runner.stack.pop()?;
     let offset = U256::from_big_endian(&runner.stack.pop()?);
     let size = U256::from_big_endian(&runner.stack.pop()?);
@@ -78,6 +79,7 @@ pub fn create2(runner: &mut Runner) -> Result<(), ExecutionError> {
 
 
     let caller = &runner.caller;
+    // caller, salt, A
     let create_address = Address::from_slice(caller).create2(salt, init_code_hash);
 
 

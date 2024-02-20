@@ -40,27 +40,27 @@ impl Memory {
     ///
     /// # Arguments
     ///
-    /// * `address` - The address to start reading from.
+    /// * `offset` - The offset to start reading from.
     /// * `size` - The number of bytes to read.
     ///
     /// # Returns
     ///
     /// A `Result` containing the bytes read or an `ExecutionError` if the read operation failed.
-    pub unsafe fn read(&mut self, address: usize, size: usize) -> Result<Vec<u8>, ExecutionError> {
+    pub unsafe fn read(&mut self, offset: usize, size: usize) -> Result<Vec<u8>, ExecutionError> {
         // Increase memory heap to the nearest multiple of 32 if address is out of bounds
-        if address + size > self.heap.len() {
+        if offset + size > self.heap.len() {
             // Calculate the nearest multiple of 32
-            let nearest_multiple = if address % 32 == 0 {
-                address + 32
+            let nearest_multiple = if offset % 32 == 0 {
+                offset + 32
             } else {
-                (address + 32) + (32 - (address + 32) % 32)
+                (offset + 32) + (32 - (offset + 32) % 32)
             };
 
             // Extend memory heap
             self.extend(nearest_multiple - self.heap.len());
         }
 
-        let ptr = self.heap.as_ptr().add(address);
+        let ptr = self.heap.as_ptr().add(offset);
         let mut data = vec![0; size];
         ptr::copy(ptr, data.as_mut_ptr(), size);
 
@@ -77,21 +77,21 @@ impl Memory {
     /// # Returns
     ///
     /// A `Result` indicating whether the write operation was successful or an `ExecutionError` if it failed.
-    pub unsafe fn write(&mut self, address: usize, data: Vec<u8>) -> Result<(), ExecutionError> {
+    pub unsafe fn write(&mut self, offset: usize, data: Vec<u8>) -> Result<(), ExecutionError> {
         // check if memory should be extended
-        if address + data.len() > self.heap.len() {
+        if offset + data.len() > self.heap.len() {
             // Calculate the nearest multiple of 32
-            let nearest_multiple = if address % 32 == 0 {
-                address + data.len() + 32
+            let nearest_multiple = if offset % 32 == 0 {
+                offset + data.len() + 32
             } else {
-                (address + data.len() + 32) + (32 - (address + data.len() + 32) % 32)
+                (offset + data.len() + 32) + (32 - (offset + data.len() + 32) % 32)
             };
 
             // Extend memory heap
             self.extend(nearest_multiple - self.heap.len());
         }
 
-        let ptr = self.heap.as_mut_ptr().add(address);
+        let ptr = self.heap.as_mut_ptr().add(offset);
         ptr::copy(data.as_ptr(), ptr, data.len());
 
         Ok(())
@@ -101,26 +101,26 @@ impl Memory {
     ///
     /// # Arguments
     ///
-    /// * `address` - The address to start reading from.
+    /// * `offset` - The offset to start reading from.
     ///
     /// # Returns
     ///
     /// A `Result` containing the 32 bytes read or an `ExecutionError` if the read operation failed.
-    pub unsafe fn mload(&mut self, address: usize) -> Result<[u8; 32], ExecutionError> {
+    pub unsafe fn mload(&mut self, offset: usize) -> Result<[u8; 32], ExecutionError> {
         // Increase memory heap to the nearest multiple of 32 if address is out of bounds
-        if address + 32 > self.heap.len() {
+        if offset + 32 > self.heap.len() {
             // Calculate the nearest multiple of 32
-            let nearest_multiple = if address % 32 == 0 {
-                address + 32
+            let nearest_multiple = if offset % 32 == 0 {
+                offset + 32
             } else {
-                (address + 32) + (32 - (address + 32) % 32)
+                (offset + 32) + (32 - (offset + 32) % 32)
             };
 
             // Extend memory heap
             self.extend(nearest_multiple - self.heap.len());
         }
 
-        let ptr = self.heap.as_ptr().add(address);
+        let ptr = self.heap.as_ptr().add(offset);
         Ok(ptr::read(ptr as *const [u8; 32]))
     }
 
@@ -128,19 +128,19 @@ impl Memory {
     ///
     /// # Arguments
     ///
-    /// * `address` - The address to start writing to.
+    /// * `offset` - The offset to start writing to.
     /// * `data` - The 32 bytes to write.
     ///
     /// # Returns
     ///
     /// A `Result` indicating whether the write operation was successful or an `ExecutionError` if it failed.
-    pub unsafe fn mstore(&mut self, address: usize, data: [u8; 32]) -> Result<(), ExecutionError> {
+    pub unsafe fn mstore(&mut self, offset: usize, data: [u8; 32]) -> Result<(), ExecutionError> {
         // Check if memory should be extended
-        if address + 32 > self.heap.len() {
-            self.extend(address + 32 - self.heap.len());
+        if offset + 32 > self.heap.len() {
+            self.extend(offset + 32 - self.heap.len());
         }
 
-        let ptr = self.heap.as_mut_ptr().add(address);
+        let ptr = self.heap.as_mut_ptr().add(offset);
         ptr::write(ptr as *mut [u8; 32], data);
 
         Ok(())

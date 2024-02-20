@@ -17,6 +17,7 @@ use crate::core_module::context::evm_context::EvmContext;
 use crate::core_module::utils::assembly::get_op_code;
 
 pub struct Runner {
+
     // Execution
     pub pc: usize,
     pub bytecode: Vec<u8>,
@@ -208,6 +209,7 @@ impl Runner {
     pub fn modify_account_state(&mut self, address: [u8; 20], account_state_ex: AccountStateEx) {
         // 1. Check if the address already exists in the EVM state
         // 2. If the address is not in the state, proceed to modify the code hash and account
+
         let storage = if let Some(storage) = account_state_ex.storage.clone() {
             storage
         } else {
@@ -563,7 +565,7 @@ impl Runner {
             _ => op_codes::system::invalid(self),
         }
     }
-
+    //
     /// Executes a call to a contract.
     /// Set up a new runner environment for the call and interpret the bytecode.
     ///
@@ -578,6 +580,7 @@ impl Runner {
     /// # Errors
     ///
     /// Returns an `ExecutionError` if the call fails.
+    ///
     pub fn call(
         &mut self,
         to: [u8; 20],

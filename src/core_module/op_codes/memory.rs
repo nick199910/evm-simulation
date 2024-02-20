@@ -5,8 +5,8 @@ use crate::core_module::utils::errors::ExecutionError;
 use ethers::types::U256;
 
 pub fn mload(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let address = U256::from_big_endian(&runner.stack.pop()?);
-    let word = unsafe { runner.memory.mload(address.as_usize())? };
+    let offset = U256::from_big_endian(&runner.stack.pop()?);
+    let word = unsafe { runner.memory.mload(offset.as_usize())? };
     let result = runner.stack.push(word);
 
     if result.is_err() {
@@ -18,10 +18,10 @@ pub fn mload(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn mstore(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let address = U256::from_big_endian(&runner.stack.pop()?);
+    let offset = U256::from_big_endian(&runner.stack.pop()?);
     let data = runner.stack.pop()?;
 
-    let result = unsafe { runner.memory.mstore(address.as_usize(), data) };
+    let result = unsafe { runner.memory.mstore(offset.as_usize(), data) };
 
     if result.is_err() {
         return Err(result.unwrap_err());

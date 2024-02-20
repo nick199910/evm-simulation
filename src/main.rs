@@ -18,7 +18,7 @@ fn main() -> Result<(), ExecutionError> {
     ]);
     let value: Option<[u8; 32]> = None;
     let data: Option<Vec<u8>> = None;
-    let mut bytecode: String = Default::default();
+    let mut bytecode: String = String::from("0x6080604052");
     let state: EvmState;
 
     state = EvmState::new(None);
