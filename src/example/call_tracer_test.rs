@@ -71,6 +71,7 @@ async fn test_op_tracer() -> () {
     }
 }
 
+#[tokio::test]
 async fn test_call_tracer() -> () {
     let euler_attack = "0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d";
     let uniswap_v2_attack = "0x45d108052e01c20f37fd05db462b9cef6629a70849bcd71b36291786ee6ee3e9";
@@ -104,7 +105,7 @@ async fn test_call_tracer() -> () {
             })
             .collect();
 
-        println!("{:?}", tracer_list[2]);
+        println!("{:?}", tracer_list);
 
         // gas: tracer_info.gas.as_u64(),
         // failed: anvil_trace.failed,

@@ -13,8 +13,11 @@ use super::utils::errors::ExecutionError;
 // Colored output
 use colored::*;
 use crate::core_module::context::account_state_ex_context::AccountStateEx;
+use crate::core_module::context::calldata_info::CallDataInfo;
 use crate::core_module::context::evm_context::EvmContext;
 use crate::core_module::utils::assembly::get_op_code;
+
+
 
 pub struct Runner {
 
@@ -42,24 +45,18 @@ pub struct Runner {
 
     // EVM env
     pub evm_context: Option<EvmContext>,
+
+    // calldata info
+    pub calldata_info: Option<CallDataInfo>,
+
+    // op list
+    pub op_list: Vec<&'static str>
+
 }
 
 /// Implementation of the Runner struct, which is responsible for executing EVM bytecode.
 impl Runner {
-    /// Creates a new instance of the EVM runner with the given parameters.
-    ///
-    /// # Arguments
-    ///
-    /// * `caller` - The address of the account that initiated the call.
-    /// * `origin` - The address of the account that originally initiated the transaction.
-    /// * `address` - The address of the account that will receive the call.
-    /// * `callvalue` - The value (in wei) that was sent along with the call.
-    /// * `calldata` - The input data for the call.
-    /// * `state` - The initial state of the EVM.
-    ///
-    /// # Returns
-    ///
-    /// A new instance of the EVM runner.
+
     pub fn new(
         caller: [u8; 20],
         origin: Option<[u8; 20]>,
@@ -114,32 +111,77 @@ impl Runner {
             call_depth: 0,
             evm_context: evm_context,
             op_count: 0,
+            calldata_info: None,
+            op_list: vec![],
         };
-
-
-        // // Set caller balance to 1000
-        // let mut result_bytes = [0u8; 32];
-        // U256::from("3635C9ADC5DEA00000").to_big_endian(&mut result_bytes);
-        // instance
-        //     .state
-        //     .accounts
-        //     .get_mut(&instance.caller)
-        //     .unwrap()
-        //     .balance = result_bytes;
 
         // Return the instance
         instance
     }
 
-    /// Creates a new `Runner` instance with default values and sets the debug level to the given value.
-    ///
-    /// # Arguments
-    ///
-    /// * `debug_level` - A `u8` value representing the debug level to set.
-    ///
-    /// # Returns
-    ///
-    /// A new `Runner` instance with default values and the debug level set to the given value.
+    pub fn new_paper(
+        caller: [u8; 20],
+        origin: Option<[u8; 20]>,
+        address: Option<[u8; 20]>,
+        callvalue: Option<[u8; 32]>,
+        calldata: Option<Vec<u8>>,
+        state: Option<EvmState>,
+        evm_context: Option<EvmContext>,
+        calldata_info: Option<CallDataInfo>
+
+    ) -> Self {
+        let mut instance = Self {
+            // Set the program counter to 0
+            pc: 0,
+            gas: 30_000_000,
+            // Create a new storage
+            state: if state.is_some() {
+                state.unwrap()
+            } else {
+                EvmState::new(None)
+            },
+            // Create an empty memory
+            memory: Memory::new(None),
+            // Create an empty memory for the call data
+            calldata: Memory::new(calldata),
+            // Create an empty memory for the return data
+            returndata: Memory::new(None),
+            // Create a new stack
+            stack: Stack::new(),
+            // Set the caller
+            caller,
+            // Set the address
+            address: if address.is_some() {
+                address.unwrap()
+            } else {
+                [0x5fu8; 20]
+            },
+            // Set the call value
+            callvalue: if callvalue.is_some() {
+                callvalue.unwrap()
+            } else {
+                [0u8; 32]
+            },
+            // Set the origin
+            origin: if origin.is_some() {
+                origin.unwrap()
+            } else {
+                caller
+            },
+            // Create a new empty bytecode
+            bytecode: Vec::new(),
+
+            // Set the call depth to 0
+            call_depth: 0,
+            evm_context,
+            op_count: 0,
+            calldata_info,
+            op_list: vec![],
+        };
+        // Return the instance
+        instance
+    }
+
     pub fn _default() -> Self {
 
         let caller = [0xaa; 20];
@@ -177,25 +219,11 @@ impl Runner {
         runner
     }
 
-    /// Increments the program counter by the specified size.
-    ///
-    /// # Arguments
-    ///
-    /// * `size` - The number of bytes to increment the program counter by.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `ExecutionError` if the program counter goes out of bounds.
     pub fn increment_pc(&mut self, size: usize) -> Result<(), ExecutionError> {
         self.pc += size;
         Ok(())
     }
 
-    /// Sets the program counter to the specified value.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The value to set the program counter to.
     pub fn set_pc(&mut self, value: usize) {
         self.pc = value;
     }
@@ -248,20 +276,6 @@ impl Runner {
         // Set the bytecode
         self.bytecode = bytecode;
 
-
-        if initial_interpretation {
-            // Set the runner address code
-            let put_code_result = self.state.put_code_at(self.address, self.bytecode.clone());
-            if put_code_result.is_err() {
-                return Err(put_code_result.unwrap_err());
-            }
-        }
-
-        /* -------------------------------------------------------------------------- */
-        /*                             Interpret bytecode                             */
-        /* -------------------------------------------------------------------------- */
-        let mut error: Option<ExecutionError> = None;
-
         // Check if the bytecode is empty
         if self.bytecode.is_empty() {
             // Return an error
@@ -269,7 +283,65 @@ impl Runner {
             return Err(ExecutionError::EmptyByteCode);
         }
 
-        let mut op_list = Vec::new();
+        if initial_interpretation {
+            // Set the runner address code
+            let put_code_result = self.state.put_code_at(self.address, self.bytecode.clone());
+            if put_code_result.is_err() {
+                return Err(put_code_result.unwrap_err());
+            }
+
+            // 开始枚举可能出现的值
+            if let Some(calldata_info) = self.calldata_info.clone() {
+                let calldata_replace = calldata_info.replace.clone();
+                for item in calldata_replace {
+                    println!("开始枚举。。。。。");
+                    self.calldata_info.as_mut().unwrap().new = item;
+                    let mut error: Option<ExecutionError> = None;
+
+                    // Interpret the bytecode
+                    while self.pc < self.bytecode.len() {
+                        let mut op_count = self.op_count;
+                        let mut flag = [0u8; 30];
+                        for i in 1..30 {
+                            if self.call_depth.eq(&i) && flag[i as usize] == 0 {
+                                flag[i as usize] = 1;
+                                op_count += i as u128;
+                            }
+                        }
+
+                        // Interpret an opcode
+                        self.op_list.push(get_op_code(self.bytecode[self.pc]));
+                        let result = self.interpret_op_code(self.bytecode[self.pc]);
+                        if result.is_err() {
+                            error = Some(result.unwrap_err());
+                            break;
+                        }
+                        self.op_count += 1;
+                    }
+
+                    if error.is_some() {
+
+                        println!(
+                            "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
+                            "ERROR:".red(),
+                            "Runtime error".red(),
+                            "PC".yellow(),
+                            self.pc,
+                            "OpCode".yellow(),
+                            self.bytecode[self.pc],
+                            error.as_ref().unwrap().to_string().red(),
+                            self.op_count
+                        );
+
+                        return Err(error.unwrap());
+                    }
+                }
+
+            }
+
+        }
+
+        let mut error: Option<ExecutionError> = None;
 
         // Interpret the bytecode
         while self.pc < self.bytecode.len() {
@@ -283,72 +355,16 @@ impl Runner {
             }
 
             // Interpret an opcode
-            op_list.push(get_op_code(self.bytecode[self.pc]));
-
-            let my_opcode = get_op_code(self.bytecode[self.pc]).to_string();
-
-            // if op_count.eq(&8353)
-            // // //     && self.call_depth == 2
-            // {
-            // if !self.pc.eq(&(read_op_tracer().structLogs[cnt].pc as usize)) {
-            // if self.call_depth == read_op_tracer().structLogs[self.op_count as usize].depth && !my_opcode.eq(&read_op_tracer().structLogs[self.op_count as usize].op) {
-            // if self.call_depth.eq(&1) && self.pc.eq(&19197) {
-            //     println!(" ===================================================================== ");
-            //     println!("op_list: {:?}", op_list);
-            //     println!("current op_code count is: {}", op_count);
-            //     println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", my_opcode, read_op_tracer().structLogs[op_count as usize].op, self.pc, read_op_tracer().structLogs[op_count as usize].pc);
-            //     println!("call deepth is {}", self.call_depth);
-            //
-            //     self.debug_memory();
-            //     self.debug_stack();
-            //     // self.debug_storage();
-            //     break;
-            // }
-
+            self.op_list.push(get_op_code(self.bytecode[self.pc]));
             let result = self.interpret_op_code(self.bytecode[self.pc]);
-            // Check if the interpretation was successful
             if result.is_err() {
-                // Store the execution error
-
-                // println!(" ===================================================================== ");
-                // println!("op_list: {:?}", op_list);
-                // println!("current op_code count is: {}", cnt);
-                // println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", my_opcode, read_op_tracer().structLogs[cnt].op, self.pc, read_op_tracer().structLogs[cnt].pc);
-                // println!("call deepth is {}", self.call_depth);
-                // println!(
-                //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n ",
-                //     "ERROR:".red(),
-                //     "Runtime error".red(),
-                //     "PC".yellow(),
-                //     self.pc,
-                //     "OpCode".yellow(),
-                //     self.bytecode[self.pc],
-                // );
-                //
-                // self.debug_memory();
-                // self.debug_stack();
-                // // self.debug_storage();
-                // break;
-
                 error = Some(result.unwrap_err());
                 break;
             }
             self.op_count += 1;
         }
 
-        /* -------------------------------------------------------------------------- */
-        /*                            Print execution error                           */
-        /* -------------------------------------------------------------------------- */
-
         if error.is_some() {
-            // println!("address is {:?} {:?}", self.address, self.address.len());
-            // println!("call deepth is {}", self.call_depth);
-            // println!("op count is {}", self.op_count);
-            //
-            // println!("my_evm_op_code {}  geth:{} my_pc: {} evm_pc: {}", self.bytecode[self.pc], read_op_tracer().structLogs[self.op_count as usize].op, self.pc, read_op_tracer().structLogs[self.op_count as usize].pc);
-            //
-            // self.debug_memory();
-            // self.debug_stack();
 
             println!(
                 "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",

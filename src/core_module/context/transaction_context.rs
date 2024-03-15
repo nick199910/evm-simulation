@@ -2,7 +2,6 @@
 use alloy_primitives::B256;
 use ethers::prelude::{Http, Provider, TxHash};
 use primitive_types::{H256, U256};
-pub use serde::Deserialize;
 pub use serde::Serialize;
 use crate::core_module::memory::Memory;
 use crate::core_module::utils::bytes::pad_left;

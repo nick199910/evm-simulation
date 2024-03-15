@@ -1,8 +1,4 @@
 use super::utils::errors::ExecutionError;
-use crate::core_module::utils;
-use colored::Colorize;
-use primitive_types::U256;
-use std::fmt;
 
 /// A stack data structure used in the Ethereum Virtual Machine (EVM) to store and manipulate data.
 #[derive(Debug)]
