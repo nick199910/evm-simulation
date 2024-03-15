@@ -1,6 +1,9 @@
 mod core_module;
 mod example;
 
+pub mod paper;
+
+
 /* ---------------------------------- Core ---------------------------------- */
 pub use core_module::memory::Memory;
 pub use core_module::op_codes;
