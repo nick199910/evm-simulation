@@ -289,56 +289,6 @@ impl Runner {
             if put_code_result.is_err() {
                 return Err(put_code_result.unwrap_err());
             }
-
-            // 开始枚举可能出现的值
-            if let Some(calldata_info) = self.calldata_info.clone() {
-                let calldata_replace = calldata_info.replace.clone();
-                for item in calldata_replace {
-                    println!("开始枚举。。。。。");
-                    self.calldata_info.as_mut().unwrap().new = item;
-                    let mut error: Option<ExecutionError> = None;
-
-                    // Interpret the bytecode
-                    while self.pc < self.bytecode.len() {
-                        let mut op_count = self.op_count;
-                        let mut flag = [0u8; 30];
-                        for i in 1..30 {
-                            if self.call_depth.eq(&i) && flag[i as usize] == 0 {
-                                flag[i as usize] = 1;
-                                op_count += i as u128;
-                            }
-                        }
-
-                        // Interpret an opcode
-                        self.op_list.push(get_op_code(self.bytecode[self.pc]));
-                        let result = self.interpret_op_code(self.bytecode[self.pc]);
-                        if result.is_err() {
-                            error = Some(result.unwrap_err());
-                            break;
-                        }
-                        self.op_count += 1;
-                    }
-
-                    if error.is_some() {
-
-                        println!(
-                            "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
-                            "ERROR:".red(),
-                            "Runtime error".red(),
-                            "PC".yellow(),
-                            self.pc,
-                            "OpCode".yellow(),
-                            self.bytecode[self.pc],
-                            error.as_ref().unwrap().to_string().red(),
-                            self.op_count
-                        );
-
-                        return Err(error.unwrap());
-                    }
-                }
-
-            }
-
         }
 
         let mut error: Option<ExecutionError> = None;
@@ -384,30 +334,77 @@ impl Runner {
         Ok(())
     }
 
-    /// Interpret a single opcode.
-    ///
-    /// # Arguments
-    ///
-    /// * `opcode` - A single opcode to interpret.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `ExecutionError` if the opcode is invalid or if an error occurs during execution.
-    ///
-    /// # OpCodes
-    ///
-    /// The function matches the given opcode with the corresponding function from the `op_codes` module.
-    /// The OpCodes are divided into the following categories:
-    ///
-    /// * Execution OpCodes
-    /// * Math operations OpCodes
-    /// * Push OpCodes
-    /// * Dup OpCodes
-    /// * Swap OpCodes
-    /// * Memory OpCodes
-    /// * Storage OpCodes
-    ///
-    /// For more information on each OpCode, please refer to the `op_codes` module.
+
+    pub fn interpret_init(
+        &mut self,
+        bytecode: Vec<u8>,
+        new_param: Vec<u8>,
+        initial_interpretation: bool,
+    ) -> Result<(), ExecutionError> {
+        // Set the bytecode
+        self.bytecode = bytecode;
+
+        // Check if the bytecode is empty
+        if self.bytecode.is_empty() {
+            // Return an error
+            println!("{}: {}", "ERROR: ".red(), ExecutionError::EmptyByteCode);
+            return Err(ExecutionError::EmptyByteCode);
+        }
+
+        if initial_interpretation {
+            // Set the runner address code
+            let put_code_result = self.state.put_code_at(self.address, self.bytecode.clone());
+            if put_code_result.is_err() {
+                return Err(put_code_result.unwrap_err());
+            }
+            // 开始枚举可能出现的值
+            self.calldata_info.as_mut().unwrap().new = new_param;
+        }
+
+        let mut error: Option<ExecutionError> = None;
+
+        // Interpret the bytecode
+        while self.pc < self.bytecode.len() {
+            let mut op_count = self.op_count;
+            let mut flag = [0u8; 30];
+            for i in 1..30 {
+                if self.call_depth.eq(&i) && flag[i as usize] == 0 {
+                    flag[i as usize] = 1;
+                    op_count += i as u128;
+                }
+            }
+
+            // Interpret an opcode
+            self.op_list.push(get_op_code(self.bytecode[self.pc]));
+            let result = self.interpret_op_code(self.bytecode[self.pc]);
+            if result.is_err() {
+                error = Some(result.unwrap_err());
+                break;
+            }
+            self.op_count += 1;
+        }
+
+        if error.is_some() {
+
+            println!(
+                "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
+                "ERROR:".red(),
+                "Runtime error".red(),
+                "PC".yellow(),
+                self.pc,
+                "OpCode".yellow(),
+                self.bytecode[self.pc],
+                error.as_ref().unwrap().to_string().red(),
+                self.op_count
+            );
+
+            return Err(error.unwrap());
+        }
+
+        Ok(())
+    }
+
+
     pub fn interpret_op_code(&mut self, opcode: u8) -> Result<(), ExecutionError> {
         match opcode {
             /* ---------------------------- Execution OpCodes --------------------------- */

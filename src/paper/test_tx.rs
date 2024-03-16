@@ -94,19 +94,18 @@ async fn test_tx_state() -> Result<(), ProviderError> {
     let mut calldata_info = CallDataInfo::new();
     let origin_data = _hex_string_to_bytes("0x00000000000000000000000000000000000000000000000000001baeaf3816f8");
     calldata_info.origin = origin_data.clone();
-    calldata_info.replace = vec![origin_data];
+    calldata_info.replace = vec![origin_data.clone(), origin_data.clone(), origin_data.clone()];
     println!("{:?}", calldata_info.origin);
     interpreter.calldata_info = Some(calldata_info);
-
-
-    // 9.
+    //
+    // exec bytecode
     let bytecode = accounts_state_pre_tx
         .get(&Address::from_slice(&transaction_content.to.unwrap()))
         .unwrap()
         .code
         .as_ref()
         .unwrap();
-    //
+
     if bytecode.starts_with("0x") {
         let bytecode = hex::decode(&bytecode[2..]).expect("Invalid bytecode");
 

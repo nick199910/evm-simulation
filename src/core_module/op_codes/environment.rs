@@ -81,7 +81,20 @@ pub fn calldataload(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = U256::from_big_endian(&address).as_usize();
 
     let calldata = unsafe { runner.calldata.read(address, 32)? };
-    let calldata = calldata.as_slice().try_into().unwrap();
+    let calldata:[u8; 32] = calldata.as_slice().try_into().unwrap();
+    // let result = runner.stack.push(calldata);
+
+    // add calldata
+
+    // let origin_data = runner.calldata_info.clone().unwrap().origin;
+    // let mut new_calldata:Vec<u8> = Vec::new();
+    // let result = if Vec::from(calldata) == origin_data {
+    //     new_calldata = runner.calldata_info.clone().unwrap().new;
+    //     println!("发生替换!!!! {} ", runner.op_count);
+    //     runner.stack.push(new_calldata.as_slice().try_into().unwrap())
+    // } else {
+    //     runner.stack.push(calldata)
+    // };
 
     let result = runner.stack.push(calldata);
 
