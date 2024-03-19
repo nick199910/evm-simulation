@@ -4,7 +4,7 @@ use crate::core_module::context::evm_context::EvmContext;
 pub struct CallDataInfo {
     pub origin: Vec<u8>,
     pub new: Vec<u8>,
-    pub replace: Vec<Vec<u8>>
+    pub attack_contract_address: Vec<u8>
 }
 
 impl CallDataInfo {
@@ -12,7 +12,7 @@ impl CallDataInfo {
         Self {
             origin: vec![],
             new: vec![],
-            replace: vec![],
+            attack_contract_address: vec![],
         }
     }
 }

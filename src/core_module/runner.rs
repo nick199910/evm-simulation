@@ -50,7 +50,10 @@ pub struct Runner {
     pub calldata_info: Option<CallDataInfo>,
 
     // op list
-    pub op_list: Vec<&'static str>
+    pub op_list: Vec<&'static str>, 
+    
+    // constraint path 
+    pub constraint_path:  Option<Vec<&'static str>>
 
 }
 
@@ -113,6 +116,7 @@ impl Runner {
             op_count: 0,
             calldata_info: None,
             op_list: vec![],
+            constraint_path: None,
         };
 
         // Return the instance
@@ -177,6 +181,7 @@ impl Runner {
             op_count: 0,
             calldata_info,
             op_list: vec![],
+            constraint_path: None,
         };
         // Return the instance
         instance
@@ -316,17 +321,17 @@ impl Runner {
 
         if error.is_some() {
 
-            println!(
-                "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
-                "ERROR:".red(),
-                "Runtime error".red(),
-                "PC".yellow(),
-                self.pc,
-                "OpCode".yellow(),
-                self.bytecode[self.pc],
-                error.as_ref().unwrap().to_string().red(),
-                self.op_count
-            );
+            // println!(
+            //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
+            //     "ERROR:".red(),
+            //     "Runtime error".red(),
+            //     "PC".yellow(),
+            //     self.pc,
+            //     "OpCode".yellow(),
+            //     self.bytecode[self.pc],
+            //     error.as_ref().unwrap().to_string().red(),
+            //     self.op_count
+            // );
 
             return Err(error.unwrap());
         }
@@ -386,17 +391,17 @@ impl Runner {
 
         if error.is_some() {
 
-            println!(
-                "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
-                "ERROR:".red(),
-                "Runtime error".red(),
-                "PC".yellow(),
-                self.pc,
-                "OpCode".yellow(),
-                self.bytecode[self.pc],
-                error.as_ref().unwrap().to_string().red(),
-                self.op_count
-            );
+            // println!(
+            //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
+            //     "ERROR:".red(),
+            //     "Runtime error".red(),
+            //     "PC".yellow(),
+            //     self.pc,
+            //     "OpCode".yellow(),
+            //     self.bytecode[self.pc],
+            //     error.as_ref().unwrap().to_string().red(),
+            //     self.op_count
+            // );
 
             return Err(error.unwrap());
         }

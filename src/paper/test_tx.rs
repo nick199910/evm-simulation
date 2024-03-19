@@ -9,7 +9,7 @@ pub use serde::Deserialize;
 pub use serde::Serialize;
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::core_module::context::account_state_ex_context::{get_accounts_state_pre_tx};
+use crate::core_module::context::account_state_ex_context::{get_accounts_state_tx, ISDiff};
 use crate::core_module::context::evm_context::EvmContext;
 use crate::core_module::context::calldata_info::CallDataInfo;
 use crate::core_module::context::transaction_context::{get_transaction_content};
@@ -29,20 +29,15 @@ async fn test_tx_state() -> Result<(), ProviderError> {
         .await
         .expect("rpc connect error");
 
-    // let euler_attack = "0xc310a0affe2169d1f6feec1c63dbc7f7c62a887fa48795d327d4d2da2d6b111d";
-
-    // let uniswap_v2_attack = "0x45d108052e01c20f37fd05db462b9cef6629a70849bcd71b36291786ee6ee3e9";
-    // let usdc_transfer_tx = "0x890249a15f17950a60711c0396ccd147068365ea852f0837c08f55f9dd7c320e";
-    let OlympusDAO_tx = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf";
-    // let Templedao_tx = "0x8c3f442fc6d640a6ff3ea0b12be64f1d4609ea94edd2966f42c01cd9bdcf04b5";
+    let olympus_dao_tx = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf";
 
     // 2. Obtain the pre_transaction_account_state, 需要把这个状态改为post的状态
     let accounts_state_pre_tx =
-        get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(OlympusDAO_tx), false).await;
+        get_accounts_state_tx(Arc::new(provider.clone()), to_h256(olympus_dao_tx), ISDiff::default()).await;
 
     // 3. Obtain the transaction context
     let transaction_content =
-        get_transaction_content(provider, TxHash::from_str(OlympusDAO_tx).unwrap())
+        get_transaction_content(provider, TxHash::from_str(olympus_dao_tx).unwrap())
             .await
             .expect("get transaction hash error");
 
@@ -94,7 +89,6 @@ async fn test_tx_state() -> Result<(), ProviderError> {
     let mut calldata_info = CallDataInfo::new();
     let origin_data = _hex_string_to_bytes("0x00000000000000000000000000000000000000000000000000001baeaf3816f8");
     calldata_info.origin = origin_data.clone();
-    calldata_info.replace = vec![origin_data.clone(), origin_data.clone(), origin_data.clone()];
     println!("{:?}", calldata_info.origin);
     interpreter.calldata_info = Some(calldata_info);
     //
@@ -108,12 +102,14 @@ async fn test_tx_state() -> Result<(), ProviderError> {
 
     if bytecode.starts_with("0x") {
         let bytecode = hex::decode(&bytecode[2..]).expect("Invalid bytecode");
-
+        let new_param = _hex_string_to_bytes("0x00000000000000000000000000000000000000000000000000001baeaf3816f6");
         // Interpret the bytecode
-        let ret = interpreter.interpret(bytecode, true);
+        let ret = interpreter.interpret_init(bytecode,new_param, true);
         if ret.is_ok() {
             println!("{:?}", interpreter.op_list.len());
-            println!("successful!!!!")
+            println!("successful!!!!");
+        } else {
+            println!("fail!!!!!!")
         }
     }
 

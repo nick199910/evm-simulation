@@ -77,7 +77,6 @@ pub fn create2(runner: &mut Runner) -> Result<(), ExecutionError> {
     // Compute the contract address
     let init_code_hash = keccak256(init_code.clone());
 
-
     let caller = &runner.caller;
     // caller, salt, A
     let create_address = Address::from_slice(caller).create2(salt, init_code_hash);

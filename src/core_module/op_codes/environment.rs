@@ -85,18 +85,23 @@ pub fn calldataload(runner: &mut Runner) -> Result<(), ExecutionError> {
     // let result = runner.stack.push(calldata);
 
     // add calldata
+    let origin_data_exist = runner.calldata_info.clone();
+    let result = if origin_data_exist.is_some() {
+        let origin_data = origin_data_exist.unwrap().origin;
+        let mut new_calldata:Vec<u8> = Vec::new();
+        let result = if Vec::from(calldata) == origin_data {
+            new_calldata = runner.calldata_info.clone().unwrap().new;
+            println!("{:?}", new_calldata);
+            println!("发生替换!!!! {} ", runner.op_count);
+            runner.stack.push(new_calldata.as_slice().try_into().unwrap())
+        } else {
+            runner.stack.push(calldata)
+        };
+        result
+    } else {
+        runner.stack.push(calldata)
+    };
 
-    // let origin_data = runner.calldata_info.clone().unwrap().origin;
-    // let mut new_calldata:Vec<u8> = Vec::new();
-    // let result = if Vec::from(calldata) == origin_data {
-    //     new_calldata = runner.calldata_info.clone().unwrap().new;
-    //     println!("发生替换!!!! {} ", runner.op_count);
-    //     runner.stack.push(new_calldata.as_slice().try_into().unwrap())
-    // } else {
-    //     runner.stack.push(calldata)
-    // };
-
-    let result = runner.stack.push(calldata);
 
     if result.is_err() {
         return Err(result.unwrap_err());

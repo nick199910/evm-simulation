@@ -54,6 +54,7 @@ pub enum StateTracerType {
     TurnOffDiff,
     TurnOnDiffPre,
     TurnOnDiffPost,
+    TXAfterState
 }
 
 

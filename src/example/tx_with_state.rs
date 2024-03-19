@@ -10,7 +10,7 @@ pub use serde::Deserialize;
 pub use serde::Serialize;
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::core_module::context::account_state_ex_context::{get_accounts_state_pre_tx};
+use crate::core_module::context::account_state_ex_context::{get_accounts_state_tx, ISDiff};
 use crate::core_module::context::evm_context::EvmContext;
 use crate::core_module::context::transaction_context::{get_transaction_content};
 use dotenv::dotenv;
@@ -39,7 +39,7 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
 
     // 2. Obtain the pre_transaction_account_state
     let accounts_state_pre_tx =
-        get_accounts_state_pre_tx(Arc::new(provider.clone()), to_h256(euler_attack), false).await;
+        get_accounts_state_tx(Arc::new(provider.clone()), to_h256(euler_attack), ISDiff::default()).await;
 
     // 3. Obtain the transaction context
     let transaction_content =
