@@ -84,7 +84,6 @@ async fn test_tx_state() -> Result<(), ProviderError> {
 
     interpreter.evm_context = Some(evm_context);
 
-
     // update calldata
     let mut calldata_info = CallDataInfo::new();
     let origin_data = _hex_string_to_bytes("0x00000000000000000000000000000000000000000000000000001baeaf3816f8");
