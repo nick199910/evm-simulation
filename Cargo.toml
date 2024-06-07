@@ -27,3 +27,7 @@ revm-primitives = "2.0.0"
 dotenv = "0.15.0"
 reqwest = "0.11.26"
 rayon = "1.10.0"
+z3 = "0.12.1"
+ethers-providers = { version = "2.0.7", features = ["ws"] }
+mysql = "*"
+chrono = "0.4"

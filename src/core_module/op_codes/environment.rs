@@ -3,10 +3,12 @@ use crate::core_module::utils;
 use crate::core_module::utils::bytes::{bytes32_to_address, pad_left};
 use crate::core_module::utils::environment::get_balance;
 use crate::core_module::utils::errors::ExecutionError;
+use std::f64::consts::E;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 // Primitive types
 use crate::core_module::context::account_state_ex_context;
+use alloy_rlp::Encodable;
 use ethers::types::U256;
 use ethers::utils::keccak256;
 
@@ -81,19 +83,21 @@ pub fn calldataload(runner: &mut Runner) -> Result<(), ExecutionError> {
     let address = U256::from_big_endian(&address).as_usize();
 
     let calldata = unsafe { runner.calldata.read(address, 32)? };
-    let calldata:[u8; 32] = calldata.as_slice().try_into().unwrap();
+    let calldata: [u8; 32] = calldata.as_slice().try_into().unwrap();
     // let result = runner.stack.push(calldata);
 
     /// todo! add calldata
     let origin_data_exist = runner.calldata_info.clone();
     let result = if origin_data_exist.is_some() {
         let origin_data = origin_data_exist.unwrap().origin;
-        let mut new_calldata:Vec<u8> = Vec::new();
+        let mut new_calldata: Vec<u8> = Vec::new();
         let result = if Vec::from(calldata) == origin_data {
             new_calldata = runner.calldata_info.clone().unwrap().new;
             println!("{:?}", new_calldata);
             println!("发生替换!!!! {} ", runner.op_count);
-            runner.stack.push(new_calldata.as_slice().try_into().unwrap())
+            runner
+                .stack
+                .push(new_calldata.as_slice().try_into().unwrap())
         } else {
             runner.stack.push(calldata)
         };
@@ -101,7 +105,6 @@ pub fn calldataload(runner: &mut Runner) -> Result<(), ExecutionError> {
     } else {
         runner.stack.push(calldata)
     };
-
 
     if result.is_err() {
         return Err(result.unwrap_err());
@@ -145,14 +148,19 @@ pub fn calldatacopy(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn codesize(runner: &mut Runner) -> Result<(), ExecutionError> {
-    let code = runner.state.get_code_at(runner.address);
+    // let code = runner.state.get_code_at(runner.address);
+    let code = &runner.bytecode;
 
-    let codesize = if code.is_none() {
+    // let codesize = if code.is_none() {
+    //     [0u8; 32]
+    // } else {
+    //     pad_left(&code.unwrap().len().to_be_bytes())
+    // };
+    let codesize = if code.length() == 0 {
         [0u8; 32]
     } else {
-        pad_left(&code.unwrap().len().to_be_bytes())
+        pad_left(&code.len().to_be_bytes())
     };
-
     let result = runner.stack.push(codesize);
 
     if result.is_err() {
@@ -164,26 +172,33 @@ pub fn codesize(runner: &mut Runner) -> Result<(), ExecutionError> {
 }
 
 pub fn codecopy(runner: &mut Runner) -> Result<(), ExecutionError> {
+    // 在memory中的offset
     let dest_offset = U256::from_big_endian(&runner.stack.pop()?).as_usize();
+    // 在bytecode的offset
     let offset = U256::from_big_endian(&runner.stack.pop()?).as_usize();
+    // code size
     let size = U256::from_big_endian(&runner.stack.pop()?).as_usize();
 
-    let code = runner.state.get_code_at(runner.address);
-
-    // Slice the code to the correct size
-    let code = if code.is_none() {
+    // 用bytecode
+    let code = &runner.bytecode;
+    let mut copy_code = if code.len() == 0 {
         vec![]
     } else {
-        // complete the code with 0s
-        let code = code.unwrap();
-        let mut code_vec = code.to_vec();
-        code_vec.resize(offset + size, 0);
-        let code = code_vec.as_slice();
+        // 确定要copy的代码
         code[offset..offset + size].to_vec()
     };
-
+    let mut mem_size = 0;
+    if dest_offset % 32 != 0 {
+        mem_size += 1;
+    }
+    if (dest_offset + size) % 32 != 0 {
+        mem_size += 1;
+    }
+    mem_size += size / 32;
+    copy_code.resize(mem_size * 32, 0);
+    // let data = copy_code.resize(, value)
     // Copy the code to memory
-    unsafe { runner.memory.write(dest_offset, code) }?;
+    unsafe { runner.memory.write(dest_offset, copy_code) }?;
 
     // Increment PC
     runner.increment_pc(1)
@@ -741,9 +756,11 @@ mod tests {
             _hex_string_to_bytes("7f7f7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6000527fff6000527fff60005260206000f30000000000000000000000000000000000006020527f000000000060205260296000f300000000000000000000000000000000000000604052604d60006000f060006000600060008463fffffffffa3d"),
             true
         );
+
         assert!(interpret_result.is_ok());
 
         let result = runner.stack.pop().unwrap();
+        println!("{:?}", result);
         assert_eq!(result, pad_left(&[0x20]));
     }
 

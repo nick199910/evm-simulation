@@ -101,7 +101,7 @@ async fn get_origin_calldata(
     index_param_value_bytes
 }
 
-#[tokio::test]
+// #[tokio::test]
 async fn test_get_opcode_list() {
     let rpc = "https://lb.nodies.app/v1/181a5ebf4c954f8496ae7cbc1ac8d03b";
     let attack_hash = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf";

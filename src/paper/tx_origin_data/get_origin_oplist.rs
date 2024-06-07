@@ -49,9 +49,9 @@ pub async fn get_opcode_list(_rpc: &str, _attack_hash: &str) -> Vec<String> {
     extract_op_values(&struct_logs)
 }
 
-#[tokio::test]
+// #[tokio::test]
 async fn test_get_opcode_list() {
-    let rpc = "https://lb.nodies.app/v1/181a5ebf4c954f8496ae7cbc1ac8d03b";
+    let rpc = "https://blue-quiet-surf.quiknode.pro/ac44441c600862066c752e9d83b7aefb0532f03b/";
     let attack_hash = "0x3ed75df83d907412af874b7998d911fdf990704da87c2b1a8cf95ca5d21504cf";
 
     let op_list = get_opcode_list(rpc, attack_hash).await;

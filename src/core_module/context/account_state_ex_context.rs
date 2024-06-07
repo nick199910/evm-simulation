@@ -221,7 +221,7 @@ pub async fn get_accounts_state_tx(
             eprintln!("transaction reverted with err: {}", err);
             process::exit(1);
         });
-
+    // println!("PreStatetracer difference：{:?}",tracer_info);
     let mut tx_account_state_ex: BTreeMap<Address, AccountStateEx> = BTreeMap::new();
 
     match tracer_info {
@@ -234,9 +234,11 @@ pub async fn get_accounts_state_tx(
                 PreStateFrame::Diff(diff_on) => {
                     if is_diff.is_pre.unwrap() == true {
                         let turn_on_diff_pre_state = &diff_on.pre;
+                        println!("This is diff_on.pre:{:?}",turn_on_diff_pre_state);
                         tx_account_state_ex = insert_tx_account_state_ex(tx_account_state_ex, turn_on_diff_pre_state, is_diff);
                     } else {
                         let turn_on_diff_pre_state = &diff_on.post;
+                        println!("This is diff_on.post:{:?}",turn_on_diff_pre_state);
                         tx_account_state_ex = insert_tx_account_state_ex(tx_account_state_ex, turn_on_diff_pre_state, is_diff);
                     }
                 }

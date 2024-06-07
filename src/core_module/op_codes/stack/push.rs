@@ -13,8 +13,8 @@ pub fn push(runner: &mut Runner, data_len: usize) -> Result<(), ExecutionError> 
     let start = 32 - data.len(); // Calculate where to start copying
     padded[start..].copy_from_slice(data); // Copy the slice into the end of the array
 
+    // let result = runner.stack.push(padded);
     let result = runner.stack.push(padded);
-
     if result.is_err() {
         return Err(result.unwrap_err());
     }

@@ -22,6 +22,7 @@ pub fn pad_left(bytes: &[u8]) -> [u8; 32] {
     padded
 }
 
+//
 pub fn pad_left_one(bytes: &[u8]) -> [u8; 32] {
     let mut padded = [255u8; 32];
     padded[32 - bytes.len()..].copy_from_slice(bytes);

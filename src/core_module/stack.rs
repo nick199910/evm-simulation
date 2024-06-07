@@ -1,3 +1,4 @@
+use std::fmt;
 use super::utils::errors::ExecutionError;
 
 /// A stack data structure used in the Ethereum Virtual Machine (EVM) to store and manipulate data.
@@ -111,5 +112,29 @@ impl Clone for Stack {
         Self {
             stack: self.stack.clone(),
         }
+    }
+}
+
+// impl fmt::Display for Stack {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         for item in &self.stack {
+//             // 打印每个item并换行
+//             writeln!(f, "{:?}", item)?;
+//         }
+//         Ok(())
+//     }
+// }
+
+impl fmt::Display for Stack {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for item in &self.stack {
+            // 打印每个 item 并换行，将每个字节转换为16进制格式
+            writeln!(
+                f,
+                "{}",
+                item.iter().map(|byte| format!("{:02x}", byte)).collect::<Vec<String>>().join(" ")
+            )?;
+        }
+        Ok(())
     }
 }

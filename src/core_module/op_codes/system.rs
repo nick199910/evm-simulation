@@ -1,3 +1,4 @@
+use crate::core_module::runner::convert_array_to_hex;
 use crate::core_module::runner::Runner;
 use crate::core_module::utils::bytes;
 use crate::core_module::utils::bytes::{bytes32_to_address, pad_left};
@@ -5,13 +6,12 @@ use crate::core_module::utils::environment::{
     delete_account, get_balance, get_nonce, init_account,
 };
 use crate::core_module::utils::errors::ExecutionError;
-
 // Primitive types
-use ethers::types::{U256};
+use ethers::types::U256;
 
+use crate::core_module::utils;
 use ethers::utils::keccak256;
 use revm_primitives::Address;
-use crate::core_module::utils;
 
 pub fn invalid(runner: &mut Runner) -> Result<(), ExecutionError> {
     Err(ExecutionError::InvalidOpcode(runner.bytecode[runner.pc]))
@@ -23,25 +23,21 @@ pub fn create(runner: &mut Runner) -> Result<(), ExecutionError> {
     let value = runner.stack.pop()?;
     let offset = U256::from_big_endian(&runner.stack.pop()?);
     let size = U256::from_big_endian(&runner.stack.pop()?);
-
+    println!("size {:?}", size);
     // Load the init code from memory
     let init_code = unsafe { runner.memory.read(offset.as_usize(), size.as_usize())? };
-
+    println!("{:?}", convert_array_to_hex(&init_code));
     // 使用Address的官方地址计算
-    let nonce = get_nonce(
-        runner.address,
-        runner,
-    )?;
+    let nonce = get_nonce(runner.address, runner)?;
     let nonce = U256::from_big_endian(&nonce).0[0];
     let caller = &runner.caller;
     let create_address = Address::from_slice(caller).create(nonce);
-
+    println!("{:?}", create_address);
     // Create the contract with init code as code
     init_account(*create_address.0, runner)?;
     runner.state.put_code_at(*create_address.0, init_code)?;
 
     let call_result = runner.call(*create_address.0, value, Vec::new(), runner.gas, false);
-
     // Check if the call failed
     if call_result.is_err() {
         runner.stack.push(pad_left(&[0x00]))?;
@@ -80,7 +76,6 @@ pub fn create2(runner: &mut Runner) -> Result<(), ExecutionError> {
     let caller = &runner.caller;
     // caller, salt, A
     let create_address = Address::from_slice(caller).create2(salt, init_code_hash);
-
 
     // Create the contract with init code as code
     init_account(*create_address.0, runner)?;

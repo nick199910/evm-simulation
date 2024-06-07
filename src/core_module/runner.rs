@@ -1,7 +1,3 @@
-use crate::core_module::utils::bytes::{_hex_string_to_bytes};
-use std::collections::HashMap;
-use ethers::types::U256;
-
 use super::memory::Memory;
 use super::op_codes;
 use super::stack::Stack;
@@ -9,18 +5,25 @@ use super::state::{AccountState, EvmState};
 use super::utils;
 use super::utils::environment::{increment_nonce, init_account};
 use super::utils::errors::ExecutionError;
+use crate::core_module::utils::bytes::_hex_string_to_bytes;
+use ethers::abi::{Address, Hash, Item};
+use ethers::types::U256;
+use ethers::utils::keccak256;
+use std::collections::HashMap;
+use std::f64::consts::E;
+use std::fmt::Display;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 // Colored output
-use colored::*;
 use crate::core_module::context::account_state_ex_context::AccountStateEx;
 use crate::core_module::context::calldata_info::CallDataInfo;
 use crate::core_module::context::evm_context::EvmContext;
 use crate::core_module::utils::assembly::get_op_code;
-
-
+use colored::*;
 
 pub struct Runner {
-
     // Execution
     pub pc: usize,
     pub bytecode: Vec<u8>,
@@ -50,20 +53,20 @@ pub struct Runner {
     pub calldata_info: Option<CallDataInfo>,
 
     // op list
-    pub op_list: Vec<&'static str>, 
-    
-    // constraint path 
-    pub constraint_path:  Option<Vec<&'static str>>
+    pub op_list: Vec<&'static str>,
 
+    // constraint path
+    pub constraint_path: Option<Vec<&'static str>>,
 }
-
+pub fn convert_array_to_hex(array: &[u8]) -> String {
+    array.iter().map(|x| format!("{:02x}", x)).collect()
+}
 /// Implementation of the Runner struct, which is responsible for executing EVM bytecode.
 impl Runner {
-
     pub fn new(
         caller: [u8; 20],
         origin: Option<[u8; 20]>,
-        address: Option<[u8; 20]>,
+        callee: Option<[u8; 20]>,
         callvalue: Option<[u8; 32]>,
         calldata: Option<Vec<u8>>,
         state: Option<EvmState>,
@@ -90,8 +93,8 @@ impl Runner {
             // Set the caller
             caller,
             // Set the address
-            address: if address.is_some() {
-                address.unwrap()
+            address: if callee.is_some() {
+                callee.unwrap()
             } else {
                 [0x5fu8; 20]
             },
@@ -131,8 +134,8 @@ impl Runner {
         calldata: Option<Vec<u8>>,
         state: Option<EvmState>,
         evm_context: Option<EvmContext>,
-        calldata_info: Option<CallDataInfo>
-
+        // KEN: Compared to calldata, calldata_info includes newInputData and attack_contractAddress.
+        calldata_info: Option<CallDataInfo>,
     ) -> Self {
         let mut instance = Self {
             // Set the program counter to 0
@@ -188,13 +191,12 @@ impl Runner {
     }
 
     pub fn _default() -> Self {
-
         let caller = [0xaa; 20];
         let origin = [0xaa; 20];
         let address = [0xab; 20];
-        let callvalue = [0x00;32];
+        let callvalue = [0x00; 32];
         let calldata = None;
-        let state= None;
+        let state = None;
         let evm_context = None;
 
         let mut runner = Self::new(
@@ -248,6 +250,7 @@ impl Runner {
         } else {
             HashMap::default()
         };
+        println!("storage is : {:?}", storage);
 
         let code_hash = if let Some(code_hash) = account_state_ex.code_hash.clone() {
             code_hash
@@ -279,6 +282,13 @@ impl Runner {
         initial_interpretation: bool,
     ) -> Result<(), ExecutionError> {
         // Set the bytecode
+        let mut runtimecode = vec![];
+        if let Some(pos) = bytecode.iter().position(|&x| x == 254) {
+            // 取出254后面的元素并转换为新的向量
+            runtimecode = bytecode[pos + 1..].to_vec();
+        } else {
+            println!("数组中没有找到254");
+        }
         self.bytecode = bytecode;
 
         // Check if the bytecode is empty
@@ -288,15 +298,27 @@ impl Runner {
             return Err(ExecutionError::EmptyByteCode);
         }
 
+        // 如果是初次执行，则将执行的bytecode写入到对应的地址下。
         if initial_interpretation {
+            // 创建状态
+            self.state.accounts.insert(
+                self.address,
+                AccountState {
+                    nonce: 0,
+                    balance: self.callvalue,
+                    storage: HashMap::new(),
+                    code_hash: [0; 32],
+                },
+            );
             // Set the runner address code
-            let put_code_result = self.state.put_code_at(self.address, self.bytecode.clone());
+            let put_code_result = self.state.put_code_at(self.address, runtimecode.clone());
             if put_code_result.is_err() {
                 return Err(put_code_result.unwrap_err());
             }
         }
 
         let mut error: Option<ExecutionError> = None;
+        // let mut file = OpenOptions::new().append(true).open("debug.txt").unwrap();
 
         // Interpret the bytecode
         while self.pc < self.bytecode.len() {
@@ -310,8 +332,30 @@ impl Runner {
             }
 
             // Interpret an opcode
-            self.op_list.push(get_op_code(self.bytecode[self.pc]));
+            let opcode = get_op_code(self.bytecode[self.pc]);
+            // if opcode.eq("CALL") {
+            //     writeln!(file, "caller {:?} callee {:?}", self.caller, self.address)
+            //         .expect("write error");
+            // }
+            self.op_list.push(opcode);
+            println!("op {:?}", opcode);
+            if opcode.eq("RETURN") {
+                println!("here");
+            }
             let result = self.interpret_op_code(self.bytecode[self.pc]);
+
+            // debug
+            // writeln!(file, "Op {} ", opcode).expect("write error");
+            // writeln!(file, "Stack {:?} ", self.stack).expect("write error");
+            // writeln!(file, "Memory {:?} ", self.memory).expect("write error");
+            // writeln!(file, "Op {} ", opcode).expect("write error");
+            let mut s = String::new();
+            for Item in &self.stack.stack {
+                s = s + &convert_array_to_hex(Item).as_str() + ",";
+            }
+            println!("after op stack {:?}", s);
+            let s1 = convert_array_to_hex(&self.memory.heap);
+            println!("after op memory {:?}", &s1);
             if result.is_err() {
                 error = Some(result.unwrap_err());
                 break;
@@ -320,26 +364,86 @@ impl Runner {
         }
 
         if error.is_some() {
-
-            // println!(
-            //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
-            //     "ERROR:".red(),
-            //     "Runtime error".red(),
-            //     "PC".yellow(),
-            //     self.pc,
-            //     "OpCode".yellow(),
-            //     self.bytecode[self.pc],
-            //     error.as_ref().unwrap().to_string().red(),
-            //     self.op_count
-            // );
-
             return Err(error.unwrap());
         }
-
+        self.set_pc(0);
         Ok(())
     }
 
+    pub fn deploy_contract(
+        &mut self,
+        bytecode: Vec<u8>,
+        params: Vec<[u8; 32]>,
+    ) -> Result<[u8; 20], ExecutionError> {
+        // 部署合约的函数
+        // Set the bytecode
+        let mut runtimecode = vec![];
+        if let Some(pos) = bytecode.iter().position(|&x| x == 254) {
+            // 取出254后面的元素并转换为新的向量
+            runtimecode = bytecode[pos + 1..].to_vec();
+        } else {
+            println!("数组中没有找到254");
+        }
+        // 将params拼接到bytecode中
+        self.bytecode = bytecode.clone();
+        for param in params {
+            self.bytecode.extend_from_slice(&param);
+        }
+        // 创建账户
+        let contract_address = *Address::random().as_fixed_bytes();
+        // to地址
+        self.address = contract_address;
+        // 设置状态
+        self.state.accounts.insert(
+            contract_address,
+            AccountState {
+                nonce: 0,
+                balance: self.callvalue,
+                storage: HashMap::new(),
+                code_hash: keccak256(&bytecode),
+            },
+        );
+        // 将runtimecode设置好
+        let put_code_result = self
+            .state
+            .put_code_at(contract_address, runtimecode.clone());
+        if put_code_result.is_err() {
+            return Err(put_code_result.unwrap_err());
+        }
+        // 执行构造函数
+        let mut error: Option<ExecutionError> = None;
+        let mut file = File::create("debug.txt").expect("Unable to create file");
 
+        while self.pc < self.bytecode.len() {
+            let mut flag = [0u8; 30];
+            for i in 1..30 {
+                if self.call_depth.eq(&i) && flag[i as usize] == 0 {
+                    flag[i as usize] = 1;
+                }
+            }
+
+            // Interpret an opcode
+            let opcode = get_op_code(self.bytecode[self.pc]);
+            if opcode == "CALL" {
+                println!("here");
+            }
+            self.op_list.push(opcode);
+            let result = self.interpret_op_code(self.bytecode[self.pc]);
+            // debug
+            writeln!(file, "Op {} ", opcode).expect("write error");
+            writeln!(file, "Stack {:?} ", self.stack).expect("write error");
+            writeln!(file, "Memory {:?} ", self.memory).expect("write error");
+            if result.is_err() {
+                error = Some(result.unwrap_err());
+                break;
+            }
+        }
+        if error.is_some() {
+            return Err(error.unwrap());
+        }
+        self.set_pc(0);
+        Ok(contract_address)
+    }
     pub fn interpret_init(
         &mut self,
         bytecode: Vec<u8>,
@@ -381,6 +485,7 @@ impl Runner {
 
             // Interpret an opcode
             self.op_list.push(get_op_code(self.bytecode[self.pc]));
+            // println!("self.op_list is :{:?}",self.op_list);
             let result = self.interpret_op_code(self.bytecode[self.pc]);
             if result.is_err() {
                 error = Some(result.unwrap_err());
@@ -390,7 +495,6 @@ impl Runner {
         }
 
         if error.is_some() {
-
             // println!(
             //     "{} {}\n  {}: 0x{:X}\n  {}: 0x{:X}\n  {}\n op_count: {}",
             //     "ERROR:".red(),
@@ -408,7 +512,6 @@ impl Runner {
 
         Ok(())
     }
-
 
     pub fn interpret_op_code(&mut self, opcode: u8) -> Result<(), ExecutionError> {
         match opcode {
@@ -583,22 +686,7 @@ impl Runner {
             _ => op_codes::system::invalid(self),
         }
     }
-    //
-    /// Executes a call to a contract.
-    /// Set up a new runner environment for the call and interpret the bytecode.
-    ///
-    /// # Arguments
-    ///
-    /// * `to` - The address of the contract to call.
-    /// * `value` - The value to send with the call.
-    /// * `calldata` - The input data to the contract.
-    /// * `_gas` - The gas limit for the call (currently unused).
-    /// * `delegate` - Whether the call is a delegate call.
-    ///
-    /// # Errors
-    ///
-    /// Returns an `ExecutionError` if the call fails.
-    ///
+
     pub fn call(
         &mut self,
         to: [u8; 20],
@@ -648,7 +736,7 @@ impl Runner {
 
         // Get the return data
         let return_data = self.returndata.heap.clone();
-
+        println!("return data{:?}:", return_data);
         // Restore the initial runner state
         if !delegate {
             self.caller = initial_caller;
@@ -677,6 +765,30 @@ impl Runner {
         Ok(())
     }
 
+    pub fn set_storage(
+        &mut self,
+        address: &[u8; 20],
+        slot: [u8; 32],
+        value: [u8; 32],
+    ) -> Result<(), ExecutionError> {
+        // 得到
+        let temp = self.state.accounts.get_mut(address).unwrap();
+        // 设置
+        temp.storage.insert(slot, value);
+        Ok(())
+    }
+
+    pub fn get_storage(
+        &mut self,
+        address: &[u8; 20],
+        slot: [u8; 32],
+    ) -> Result<&[u8; 32], ExecutionError> {
+        let temp = self.state.accounts.get(address).unwrap();
+        match temp.storage.get(&slot) {
+            Some(value) => Ok(value),
+            None => Err(ExecutionError::ErrorSlot("slot is not init")),
+        }
+    }
     fn debug_stack(&self) {
         let border_line =
             "\n╔═══════════════════════════════════════════════════════════════════════════════════════════════════════╗";

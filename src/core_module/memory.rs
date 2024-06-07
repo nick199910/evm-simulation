@@ -1,9 +1,10 @@
 use super::utils::errors::ExecutionError;
-use std::ptr;
+use std::{fmt, ptr};
 
 /// Represents the memory of the EVM.
 #[derive(Debug)]
 pub struct Memory {
+    // Memory本身只是一个u8类型的数组，这样的话并没有说明heap一定是要以32字节为单位。只不过在读取和写入进行扩展的时候，好像确实都是以32字节为单位进行扩展/
     pub heap: Vec<u8>,
 }
 
@@ -17,6 +18,7 @@ impl Memory {
     /// # Returns
     ///
     /// A new instance of `Memory`.
+    /// memory在创建的时候并没有对
     pub fn new(data: Option<Vec<u8>>) -> Self {
         Self {
             heap: if data.is_some() {
@@ -48,6 +50,7 @@ impl Memory {
     /// A `Result` containing the bytes read or an `ExecutionError` if the read operation failed.
     pub unsafe fn read(&mut self, offset: usize, size: usize) -> Result<Vec<u8>, ExecutionError> {
         // Increase memory heap to the nearest multiple of 32 if address is out of bounds
+        // 如果要获取的长度超过了memory数组原来的长度，则需要扩展memory数组的长度
         if offset + size > self.heap.len() {
             // Calculate the nearest multiple of 32
             let nearest_multiple = if offset % 32 == 0 {
@@ -120,7 +123,9 @@ impl Memory {
             self.extend(nearest_multiple - self.heap.len());
         }
 
+        // 获取了heap的指针并将指针的位置向后移动了offset个元素的距离，最终ptr指向了self.heap中第offset个元素。
         let ptr = self.heap.as_ptr().add(offset);
+        // 从这个指针指向位置开始，读取三十二字节的内容。
         Ok(ptr::read(ptr as *const [u8; 32]))
     }
 
@@ -141,6 +146,7 @@ impl Memory {
         }
 
         let ptr = self.heap.as_mut_ptr().add(offset);
+        // 首先将ptr转变为转换为指向[u8; 32]类型数据的可变指针，然后将data放到指针所指向的位置
         ptr::write(ptr as *mut [u8; 32], data);
 
         Ok(())
@@ -163,3 +169,15 @@ impl Clone for Memory {
         }
     }
 }
+// impl fmt::Display for Memory{
+//     fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result{
+//         for item in &self.heap{
+//             writeln!(
+//                 f,
+//                 "{}",
+//                 item.iter().map(|byte| format!("{:02x}",byte).collect::<Vec<String>>().join(""))
+//             )?;
+//         }
+//         Ok(())
+//     }
+// }

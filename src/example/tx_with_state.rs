@@ -105,7 +105,8 @@ async fn set_evm_pre_tx_state() -> Result<(), ProviderError> {
         // Interpret the bytecode
         let ret = interpreter.interpret(bytecode, true);
         if ret.is_ok() {
-            println!("successful!!!!")
+            println!("successful!!!!");
+            println!("op_codelist is : {:?}",interpreter.op_list);
         }
     }
 

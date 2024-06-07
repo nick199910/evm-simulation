@@ -24,6 +24,9 @@ pub enum ExecutionError {
     Revert(Vec<u8>),
     RevertWithoutData,
     NotImplemented(u8),
+
+    // storage
+    ErrorSlot(&'static str),
 }
 
 impl fmt::Display for ExecutionError {
@@ -57,6 +60,9 @@ impl fmt::Display for ExecutionError {
                 let hex = super::debug::vec_to_hex_string(data.to_owned());
                 write!(f, "Execution revert with data: {}", hex)
             }
+            ExecutionError::ErrorSlot(reason) => {
+                write!(f, "{}", reason)
+            }
         }
     }
 }
@@ -81,6 +87,57 @@ impl PartialEq for ExecutionError {
             (NotImplemented(a), NotImplemented(b)) => a == b,
             (Revert(a), Revert(b)) => a == b,
             _ => false,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum DatabaseError {
+    ConnectionError,
+    QueryError,
+    InsertError,
+    UpdateError,
+    DeleteError,
+    SelectError,
+    TransactionError,
+    CommitError,
+    RollbackError,
+    ErrorSlot(&'static str),
+}
+
+impl fmt::Display for DatabaseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            DatabaseError::ConnectionError => {
+                write!(f, "Connection error")
+            }
+            DatabaseError::QueryError => {
+                write!(f, "Query error")
+            }
+            DatabaseError::InsertError => {
+                write!(f, "Insert error")
+            }
+            DatabaseError::UpdateError => {
+                write!(f, "Update error")
+            }
+            DatabaseError::DeleteError => {
+                write!(f, "Delete error")
+            }
+            DatabaseError::SelectError => {
+                write!(f, "Select error")
+            }
+            DatabaseError::TransactionError => {
+                write!(f, "Transaction error")
+            }
+            DatabaseError::CommitError => {
+                write!(f, "Commit error")
+            }
+            DatabaseError::RollbackError => {
+                write!(f, "Rollback error")
+            }
+            DatabaseError::ErrorSlot(reason) => {
+                write!(f, "{}", reason)
+            }
         }
     }
 }
